@@ -1,4 +1,6 @@
-package annotation;
+package org.tarantool.orm.annotation;
+
+import org.tarantool.orm.type.TarantoolType;
 
 import java.lang.annotation.*;
 
@@ -10,5 +12,6 @@ import java.lang.annotation.*;
 @Inherited
 public @interface IndexField {
     String indexName();
-    int parts() default 1;
+    int part() default 1;
+    TarantoolType type() default TarantoolType.SCALAR;
 }

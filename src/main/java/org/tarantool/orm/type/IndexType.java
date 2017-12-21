@@ -1,3 +1,5 @@
+package org.tarantool.orm.type;
+
 /**
  * Created by GrIfOn on 20.12.2017.
  */

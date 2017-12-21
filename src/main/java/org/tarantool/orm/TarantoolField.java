@@ -1,3 +1,5 @@
+package org.tarantool.orm;
+
 import java.io.Serializable;
 
 /**
@@ -5,37 +7,17 @@ import java.io.Serializable;
  */
 final public class TarantoolField<T extends Serializable> {
     private T value;
-    private int part;
-    private TarantoolType type;
 
     public TarantoolField() {
-        this(null, TarantoolType.SCALAR, 1);
+        this(null);
     }
 
-    public TarantoolField(int part) {
-        this(null, TarantoolType.SCALAR, part);
-    }
-
-    public TarantoolField(T value, int part) {
-        this(value, TarantoolType.SCALAR, part);
-    }
-
-    public TarantoolField(T value, TarantoolType type, int part) {
+    public TarantoolField(T value) {
         this.value = value;
-        this.type = type;
-        this.part = part;
-    }
-
-    public int getPart() {
-        return part;
     }
 
     public T getValue() {
         return value;
-    }
-
-    public TarantoolType getType() {
-        return type;
     }
 
     public void setValue(T value) {
@@ -50,10 +32,6 @@ final public class TarantoolField<T extends Serializable> {
         TarantoolField<?> that = (TarantoolField<?>) o;
 
         return value != null ? value.equals(that.value) : that.value == null;
-    }
-
-    final public String toIndexPart() {
-        return this.part + ", '" + this.type.getType() + "'";
     }
 
     @Override

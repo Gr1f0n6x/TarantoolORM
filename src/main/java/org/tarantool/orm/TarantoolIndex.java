@@ -1,3 +1,8 @@
+package org.tarantool.orm;
+
+import org.tarantool.orm.annotation.IndexField;
+import org.tarantool.orm.type.IndexType;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,23 +34,25 @@ final public class TarantoolIndex {
         return name;
     }
 
-    public String createIndex(String spaceName, List<TarantoolField> indexFields) {
+    public String createIndex(String spaceName, List<IndexField> indexFields) {
         return String.format("box.space.%s:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s}})",
                 spaceName,
                 this.name,
                 this.type.getType(),
                 this.ifNotExists,
                 this.unique,
-                String.join(", ", indexFields.stream().map(TarantoolField::toIndexPart).collect(Collectors.toList())));
+                String.join(", ", indexFields.stream().map(x -> String.format("%d, '%s'", x.part(), x.type())).collect(Collectors.toList()))
+        );
     }
 
-    public String createIndex(int spaceId, List<TarantoolField> indexFields) {
+    public String createIndex(int spaceId, List<IndexField> indexFields) {
         return String.format("box.space[%d]:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s}})",
                 spaceId,
                 this.name,
                 this.type.getType(),
                 this.ifNotExists,
                 this.unique,
-                String.join(", ", indexFields.stream().map(TarantoolField::toIndexPart).collect(Collectors.toList())));
+                String.join(", ", indexFields.stream().map(x -> String.format("%d, '%s'", x.part(), x.type())).collect(Collectors.toList()))
+        );
     }
 }

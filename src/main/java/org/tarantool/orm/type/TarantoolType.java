@@ -1,9 +1,11 @@
+package org.tarantool.orm.type;
+
 /**
  * Created by GrIfOn on 21.12.2017.
  */
 public enum TarantoolType {
     UNSIGNED("unsigned"),
-    STRING("STR"),
+    STRING("str"),
     INTEGER("integer"),
     NUMBER("number"),
     BOOLEAN("boolean"),
@@ -17,6 +19,11 @@ public enum TarantoolType {
     }
 
     public String getType() {
+        return type;
+    }
+
+    @Override
+    public String toString() {
         return type;
     }
 }

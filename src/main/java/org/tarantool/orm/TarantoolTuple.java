@@ -2,6 +2,7 @@ package org.tarantool.orm;
 
 import org.tarantool.orm.annotation.IndexField;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,13 +38,13 @@ abstract public class TarantoolTuple {
                 .collect(Collectors.toList());
     }
 
-    final public List<?> getValuesForUpdate() {
+    final public Object[] getValuesForUpdate() {
         List<TarantoolField> fields = this.getFields();
 
         return IntStream
-                .range(1, this.fieldCount + 1)
-                .mapToObj(i -> String.format("{'=', %d, %s}", i, fields.get(i - 1)))
-                .collect(Collectors.toList());
+                .range(0, this.fieldCount)
+                .mapToObj(i -> Arrays.asList("=", i, fields.get(i).getValue()))
+                .collect(Collectors.toList()).toArray();
     }
 
     private List<TarantoolField> getFields() {

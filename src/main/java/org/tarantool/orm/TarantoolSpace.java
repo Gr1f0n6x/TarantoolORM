@@ -4,6 +4,7 @@ import org.tarantool.orm.annotation.IndexField;
 import org.tarantool.orm.exception.TarantoolNoSuchIndexException;
 import org.tarantool.orm.exception.TarantoolORMException;
 import org.tarantool.TarantoolClient;
+import org.tarantool.orm.type.IndexType;
 import org.tarantool.orm.type.IteratorType;
 
 import java.util.List;
@@ -15,23 +16,22 @@ import java.util.stream.Stream;
 /**
  * Created by GrIfOn on 20.12.2017.
  */
-final public class TarantoolSpace<T extends TarantoolTuple> {
-    private TarantoolClient client;
-    private String spaceName;
+abstract class TarantoolSpace<T extends TarantoolTuple> {
     private boolean ifNotExists;
     private boolean temporary;
-    private int fieldCount;
-    private int spaceId;
-
     private Class<T> type;
-
     private Map<String, List<IndexField>> indexFields;
 
-    private TarantoolIndex primary;
-    private TarantoolIndex secondary;
+    protected TarantoolClient client;
+    protected String spaceName;
+    protected int fieldCount;
+    protected int spaceId;
 
-    private int primaryIndexId;
-    private int secondaryIndexId;
+    protected TarantoolIndex primary;
+    protected TarantoolIndex secondary;
+
+    protected int primaryIndexId;
+    protected int secondaryIndexId;
 
     public TarantoolSpace(TarantoolClient client, Class<T> type, String spaceName) throws TarantoolORMException {
         this(client, type, spaceName, false, 0, false);
@@ -63,14 +63,14 @@ final public class TarantoolSpace<T extends TarantoolTuple> {
         this.initSpace();
     }
 
-    public Map<String, List<IndexField>> getIndexFields() {
+    final public Map<String, List<IndexField>> getIndexFields() {
         return indexFields;
     }
 
-    public void createIndex(TarantoolIndex index, boolean primary) {
+    final public void createIndex(TarantoolIndex index, boolean primary) {
         String query = index.createIndex(this.spaceName, this.indexFields.get(index.getName()));
         this.client.syncOps().eval(query);
-        int indexId = (Integer) eval(String.format("return box.space.%s.index.%s.id", this.spaceName, index.getName())).get(0);
+        int indexId = (Integer) ((List<?>)eval(String.format("return box.space.%s.index.%s.id", this.spaceName, index.getName()))).get(0);
         if (primary) {
             if (this.primary != null) {
                 String dropQuery = this.primary.dropIndex(this.spaceName);
@@ -88,166 +88,107 @@ final public class TarantoolSpace<T extends TarantoolTuple> {
         }
     }
 
-    public List<?> eval(String query) {
-        return this.client.syncOps().eval(query);
-    }
-
-    public Future<List<?>> asyncEval(String query) {
-        return this.client.asyncOps().eval(query);
-    }
-
-    public int getPrimaryIndexId() {
+    final public int getPrimaryIndexId() {
         return primaryIndexId;
     }
 
-    public int getSecondaryIndexId() {
+    final public int getSecondaryIndexId() {
         return secondaryIndexId;
     }
 
-    public List<?> insert(T tuple) {
-        return this.client
-                .syncOps()
-                .insert(
-                        this.spaceId,
-                        tuple.getValues()
-                );
-    }
-
-    public List<?> update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-            return this.client
-                    .syncOps()
-                    .update(
-                            this.spaceId,
-                            usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName()),
-                            tuple.getValuesForUpdate()
-                    );
+    final public Object dropIndex(boolean primary) {
+        if (primary) {
+            String query = this.primary.dropIndex(this.spaceName);
+            return eval(query);
+        } else {
+            String query = this.secondary.dropIndex(this.spaceName);
+            return eval(query);
         }
-
-    public List<?> replace(T tuple) {
-        return this.client
-                .syncOps()
-                .replace(
-                        this.spaceId,
-                        tuple.getValues()
-                );
-
     }
 
-    public List<?> delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-        return this.client
-                .syncOps()
-                .delete(
-                        this.spaceId,
-                        usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName())
-                );
+    final public Object min(boolean primary) {
+        if (primary) {
+            String query = this.primary.min(this.spaceName);
+            return eval(query);
+        } else {
+            String query = this.secondary.min(this.spaceName);
+            return eval(query);
+        }
     }
 
-    public List<?> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-        return this.client
-                .syncOps()
-                .upsert(
-                        this.spaceId,
-                        usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName()),
-                        tuple.getValues(),
-                        tuple.getValuesForUpdate()
-                        );
+    final public Object max(boolean primary) {
+        if (primary) {
+            String query = this.primary.max(this.spaceName);
+            return eval(query);
+        } else {
+            String query = this.secondary.max(this.spaceName);
+            return eval(query);
+        }
     }
 
-    public List<?> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-        return this.client
-                .syncOps()
-                .select(
-                        this.spaceId,
-                        usePrimaryIndex ? this.primaryIndexId : this.secondaryIndexId,
-                        tuple.getIndexValues(usePrimaryIndex ? this.primary.getName() : this.secondary.getName()),
-                        offset,
-                        limit,
-                        iteratorType.getType()
-                );
+    final public Object random(boolean primary, int seed) {
+        if (primary) {
+            String query = this.primary.random(this.spaceName, seed);
+            return eval(query);
+        } else {
+            String query = this.secondary.random(this.spaceName, seed);
+            return eval(query);
+        }
     }
 
-    public Future<List<?>> asyncInsert(T tuple) {
-        return this.client
-                .asyncOps()
-                .insert(
-                        this.spaceId,
-                        tuple.getValues()
-                );
+    final public Object count(boolean primary, List<?> key) {
+        if (primary) {
+            String query = this.primary.count(this.spaceName, key);
+            return eval(query);
+        } else {
+            String query = this.secondary.count(this.spaceName, key);
+            return eval(query);
+        }
     }
 
-    public Future<List<?>> asyncUpdate(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-        return this.client
-                .asyncOps()
-                .update(
-                        this.spaceId,
-                        usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName()),
-                        tuple.getValuesForUpdate()
-                );
+    final public Object count(boolean primary, List<?> key, IteratorType type) {
+        if (primary) {
+            String query = this.primary.count(this.spaceName, key, type);
+            return eval(query);
+        } else {
+            String query = this.secondary.count(this.spaceName, key, type);
+            return eval(query);
+        }
     }
 
-    public Future<List<?>> asyncReplace(T tuple) {
-        return this.client
-                .asyncOps()
-                .replace(
-                        this.spaceId,
-                        tuple.getValues()
-                );
+    final public Object indexBsize(boolean primary) {
+        if (primary) {
+            String query = this.primary.bsize(this.spaceName);
+            return eval(query);
+        } else {
+            String query = this.secondary.bsize(this.spaceName);
+            return eval(query);
+        }
     }
 
-    public Future<List<?>> asyncDelete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
-
-        return this.client.asyncOps().delete(
-                this.spaceId,
-                usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName())
-        );
+    final public Object alter(boolean primary, boolean unique, IndexType type) {
+        if (primary) {
+            String query = this.primary.alter(this.spaceName, unique, type);
+            return eval(query);
+        } else {
+            String query = this.secondary.alter(this.spaceName, unique, type);
+            return eval(query);
+        }
     }
 
-    public Future<List<?>> asyncUpsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
+    public abstract Object eval(String query);
 
-        return this.client
-                .asyncOps()
-                .upsert(
-                        this.spaceId,
-                        usePrimaryIndex ? tuple.getIndexValues(this.primary.getName()) : tuple.getIndexValues(this.secondary.getName()),
-                        tuple.getValues(),
-                        tuple.getValuesForUpdate()
-                );
-    }
+    public abstract Object insert(T tuple);
 
-    public Future<List<?>> asyncSelect(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolNoSuchIndexException();
+    public abstract Object update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-        return this.client.asyncOps().select(
-                this.spaceId,
-                usePrimaryIndex ? this.primaryIndexId : this.secondaryIndexId,
-                tuple.getIndexValues(usePrimaryIndex ? this.primary.getName() : this.secondary.getName()),
-                offset,
-                limit,
-                iteratorType.getType()
-        );
-    }
+    public abstract Object replace(T tuple);
 
-    private void initSpace() {
-        eval(String.format("box.schema.space.create('%s', {temporary=%s, if_not_exists=%s, field_count=%d})",
-                this.spaceName,
-                this.temporary,
-                this.ifNotExists,
-                this.fieldCount));
+    public abstract Object delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-        this.spaceId = (Integer) eval(String.format("return box.space.%s.id", this.spaceName)).get(0);
-    }
+    public abstract Object upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+
+    public abstract Object select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException;
 
     private Map<String, List<IndexField>> indexFields() {
         return Stream.of(this.type.getDeclaredFields())
@@ -257,5 +198,15 @@ final public class TarantoolSpace<T extends TarantoolTuple> {
                 })
                 .map(x -> x.getAnnotation(IndexField.class))
                 .collect(Collectors.groupingBy(IndexField::indexName));
+    }
+
+    private void initSpace() {
+        eval(String.format("box.schema.space.create('%s', {temporary=%s, if_not_exists=%s, field_count=%d})",
+                this.spaceName,
+                this.temporary,
+                this.ifNotExists,
+                this.fieldCount));
+
+        this.spaceId = (Integer) ((List<?>)eval(String.format("return box.space.%s.id", this.spaceName))).get(0);
     }
 }

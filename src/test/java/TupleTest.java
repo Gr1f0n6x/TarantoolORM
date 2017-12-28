@@ -5,30 +5,13 @@ import org.tarantool.orm.TarantoolTuple;
 import org.tarantool.orm.type.TarantoolType;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
 /**
  * Created by GrIfOn on 20.12.2017.
  */
-class MyTuple extends TarantoolTuple {
-    @IndexField(indexName = "primary", part = 1, type = TarantoolType.INTEGER)
-    TarantoolField<Integer> a = new TarantoolField<>(10);
-    @IndexField(indexName = "primary", part = 2, type = TarantoolType.UNSIGNED)
-    TarantoolField<Long> b = new TarantoolField<>(20L);
-    @IndexField(indexName = "secondary",  part = 3, type = TarantoolType.SCALAR)
-    TarantoolField<String> c = new TarantoolField<>("value");
-
-    public MyTuple() {
-    }
-
-    public MyTuple(Integer a, Long b, String c) {
-        this.a.setValue(a);
-        this.b.setValue(b);
-        this.c.setValue(c);
-    }
-}
-
 public class TupleTest {
     @Test
     public void testTupleFields() {
@@ -70,5 +53,11 @@ public class TupleTest {
     public void testGetValuesForUpdate() {
         TarantoolTuple tuple = new MyTuple();
         assertEquals("[[=, 0, 10], [=, 1, 20], [=, 2, value]]", Arrays.toString(tuple.getValuesForUpdate()));
+    }
+
+    @Test
+    public void testCostructorWithValueList() throws InstantiationException, IllegalAccessException {
+        MyTuple tuple = (MyTuple) TarantoolTuple.build(MyTuple.class, Arrays.asList(1, 2L, "valueFromList"));
+        assertEquals("[1, 2, valueFromList]", tuple.getValues().toString());
     }
 }

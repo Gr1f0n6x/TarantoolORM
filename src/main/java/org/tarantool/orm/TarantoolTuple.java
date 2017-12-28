@@ -2,7 +2,9 @@ package org.tarantool.orm;
 
 import org.tarantool.orm.annotation.IndexField;
 
+import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -12,10 +14,32 @@ import java.util.stream.Stream;
  * Created by GrIfOn on 20.12.2017.
  */
 abstract public class TarantoolTuple {
-    private final int fieldCount;
+    private int fieldCount;
 
     public TarantoolTuple() {
         fieldCount = this.getFields().size();
+    }
+
+    public static <T extends TarantoolTuple> TarantoolTuple build(Class<T> type, List<?> values) throws IllegalAccessException, InstantiationException {
+        TarantoolTuple tuple = type.newInstance();
+        tuple.initFromList(values);
+
+        return tuple;
+    }
+
+    public void initFromList(List<?> values) {
+        List<TarantoolField> fields = this.getFields();
+        fieldCount = fields.size();
+
+        Iterator<TarantoolField> fieldIter = fields.iterator();
+        Iterator<?> valIter = values.iterator();
+
+        while (fieldIter.hasNext() && valIter.hasNext()) {
+            TarantoolField field = fieldIter.next();
+            Object val = valIter.next();
+
+            field.setValue((Serializable) val);
+        }
     }
 
     public int getFieldCount() {

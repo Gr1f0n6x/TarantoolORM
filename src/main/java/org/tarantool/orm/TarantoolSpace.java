@@ -16,10 +16,10 @@ import java.util.stream.Stream;
 /**
  * Created by GrIfOn on 20.12.2017.
  */
-abstract class TarantoolSpace<T extends TarantoolTuple> {
+public abstract class TarantoolSpace<T extends TarantoolTuple> {
     private boolean ifNotExists;
     private boolean temporary;
-    private Class<T> type;
+    protected Class<T> type;
     private Map<String, List<IndexField>> indexFields;
 
     protected TarantoolClient client;
@@ -69,8 +69,8 @@ abstract class TarantoolSpace<T extends TarantoolTuple> {
 
     final public void createIndex(TarantoolIndex index, boolean primary) {
         String query = index.createIndex(this.spaceName, this.indexFields.get(index.getName()));
-        this.client.syncOps().eval(query);
-        int indexId = (Integer) ((List<?>)eval(String.format("return box.space.%s.index.%s.id", this.spaceName, index.getName()))).get(0);
+        this.eval(query);
+        int indexId = getId(String.format("return box.space.%s.index.%s.id", this.spaceName, index.getName()));
         if (primary) {
             if (this.primary != null) {
                 String dropQuery = this.primary.dropIndex(this.spaceName);
@@ -207,6 +207,8 @@ abstract class TarantoolSpace<T extends TarantoolTuple> {
                 this.ifNotExists,
                 this.fieldCount));
 
-        this.spaceId = (Integer) ((List<?>)eval(String.format("return box.space.%s.id", this.spaceName))).get(0);
+        this.spaceId = getId(String.format("return box.space.%s.id", this.spaceName));
     }
+
+    protected abstract Integer getId(String query);
 }

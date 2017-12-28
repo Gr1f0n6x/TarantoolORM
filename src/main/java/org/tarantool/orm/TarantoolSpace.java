@@ -178,17 +178,17 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
 
     public abstract Object eval(String query);
 
-    public abstract Object insert(T tuple);
+    public abstract TarantoolQueryResult<T> insert(T tuple);
 
-    public abstract Object update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolQueryResult<T> update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract Object replace(T tuple);
+    public abstract TarantoolQueryResult<T> replace(T tuple);
 
-    public abstract Object delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolQueryResult<T> delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract Object upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolQueryResult<T> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract Object select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolQueryResult<T> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException;
 
     private Map<String, List<IndexField>> indexFields() {
         return Stream.of(this.type.getDeclaredFields())

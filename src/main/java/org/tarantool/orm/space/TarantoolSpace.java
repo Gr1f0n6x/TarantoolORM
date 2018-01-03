@@ -1,5 +1,9 @@
-package org.tarantool.orm;
+package org.tarantool.orm.space;
 
+import org.tarantool.orm.entity.TarantoolField;
+import org.tarantool.orm.index.TarantoolIndex;
+import org.tarantool.orm.query.TarantoolResultSet;
+import org.tarantool.orm.entity.TarantoolTuple;
 import org.tarantool.orm.annotation.IndexField;
 import org.tarantool.orm.exception.TarantoolNoSuchIndexException;
 import org.tarantool.orm.exception.TarantoolORMException;
@@ -9,7 +13,6 @@ import org.tarantool.orm.type.IteratorType;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +48,7 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
         this(client, type, spaceName, ifNotExists, fieldCount, false);
     }
 
+    // TODO check field count in tuple class
     public TarantoolSpace(TarantoolClient client, Class<T> type, String spaceName, boolean ifNotExists, int fieldCount, boolean temporary) throws TarantoolORMException {
         if (fieldCount < 0) {
             throw new TarantoolORMException("Field count should be >= 0");
@@ -67,20 +71,21 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
         return indexFields;
     }
 
+    // TODO ask - drop or not old indexes. If no -> raise exception if old indexes exist
     final public void createIndex(TarantoolIndex index, boolean primary) {
         String query = index.createIndex(this.spaceName, this.indexFields.get(index.getName()));
         this.eval(query);
         int indexId = getId(String.format("return box.space.%s.index.%s.id", this.spaceName, index.getName()));
         if (primary) {
             if (this.primary != null) {
-                String dropQuery = this.primary.dropIndex(this.spaceName);
+                String dropQuery = this.primary.drop(this.spaceName);
                 eval(dropQuery);
             }
             this.primary = index;
             this.primaryIndexId = indexId;
         } else {
             if (this.secondary != null) {
-                String dropQuery = this.secondary.dropIndex(this.spaceName);
+                String dropQuery = this.secondary.drop(this.spaceName);
                 eval(dropQuery);
             }
             this.secondary = index;
@@ -88,107 +93,61 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
         }
     }
 
+    // TODO raise exception if no index exists?
     final public int getPrimaryIndexId() {
         return primaryIndexId;
     }
 
+    // TODO raise exception if no index exists?
     final public int getSecondaryIndexId() {
         return secondaryIndexId;
     }
 
-    final public Object dropIndex(boolean primary) {
-        if (primary) {
-            String query = this.primary.dropIndex(this.spaceName);
-            return eval(query);
-        } else {
-            String query = this.secondary.dropIndex(this.spaceName);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<T> min(boolean primary);
 
-    final public Object min(boolean primary) {
-        if (primary) {
-            String query = this.primary.min(this.spaceName);
-            return eval(query);
-        } else {
-            String query = this.secondary.min(this.spaceName);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<T> max(boolean primary);
 
-    final public Object max(boolean primary) {
-        if (primary) {
-            String query = this.primary.max(this.spaceName);
-            return eval(query);
-        } else {
-            String query = this.secondary.max(this.spaceName);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<T> random(boolean primary, int seed);
 
-    final public Object random(boolean primary, int seed) {
-        if (primary) {
-            String query = this.primary.random(this.spaceName, seed);
-            return eval(query);
-        } else {
-            String query = this.secondary.random(this.spaceName, seed);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<Integer> count(boolean primary, T key);
 
-    final public Object count(boolean primary, List<?> key) {
-        if (primary) {
-            String query = this.primary.count(this.spaceName, key);
-            return eval(query);
-        } else {
-            String query = this.secondary.count(this.spaceName, key);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<Integer> count(boolean primary, T key, IteratorType type);
 
-    final public Object count(boolean primary, List<?> key, IteratorType type) {
-        if (primary) {
-            String query = this.primary.count(this.spaceName, key, type);
-            return eval(query);
-        } else {
-            String query = this.secondary.count(this.spaceName, key, type);
-            return eval(query);
-        }
-    }
+    public abstract TarantoolResultSet<Integer> indexBsize(boolean primary);
 
-    final public Object indexBsize(boolean primary) {
-        if (primary) {
-            String query = this.primary.bsize(this.spaceName);
-            return eval(query);
-        } else {
-            String query = this.secondary.bsize(this.spaceName);
-            return eval(query);
-        }
-    }
-
-    final public Object alter(boolean primary, boolean unique, IndexType type) {
+    final public void alterIndex(boolean primary, boolean unique, IndexType type) {
         if (primary) {
             String query = this.primary.alter(this.spaceName, unique, type);
-            return eval(query);
+            eval(query);
         } else {
             String query = this.secondary.alter(this.spaceName, unique, type);
-            return eval(query);
+            eval(query);
+        }
+    }
+
+    final public void dropIndex(boolean primary) {
+        if (primary) {
+            String query = this.primary.drop(this.spaceName);
+            eval(query);
+        } else {
+            String query = this.secondary.drop(this.spaceName);
+            eval(query);
         }
     }
 
     public abstract Object eval(String query);
 
-    public abstract TarantoolQueryResult<T> insert(T tuple);
+    public abstract TarantoolResultSet<T> insert(T tuple);
 
-    public abstract TarantoolQueryResult<T> update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolResultSet<T> update(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract TarantoolQueryResult<T> replace(T tuple);
+    public abstract TarantoolResultSet<T> replace(T tuple);
 
-    public abstract TarantoolQueryResult<T> delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolResultSet<T> delete(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract TarantoolQueryResult<T> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolResultSet<T> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolNoSuchIndexException;
 
-    public abstract TarantoolQueryResult<T> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException;
+    public abstract TarantoolResultSet<T> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolNoSuchIndexException;
 
     private Map<String, List<IndexField>> indexFields() {
         return Stream.of(this.type.getDeclaredFields())

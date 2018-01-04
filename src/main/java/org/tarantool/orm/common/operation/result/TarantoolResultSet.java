@@ -1,4 +1,4 @@
-package org.tarantool.orm.query;
+package org.tarantool.orm.common.operation.result;
 
 import java.util.List;
 

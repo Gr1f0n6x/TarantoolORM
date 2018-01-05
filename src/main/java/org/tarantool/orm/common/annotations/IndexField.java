@@ -1,6 +1,6 @@
-package org.tarantool.orm.annotation;
+package org.tarantool.orm.common.annotations;
 
-import org.tarantool.orm.type.TarantoolType;
+import org.tarantool.orm.common.type.TarantoolType;
 
 import java.lang.annotation.*;
 

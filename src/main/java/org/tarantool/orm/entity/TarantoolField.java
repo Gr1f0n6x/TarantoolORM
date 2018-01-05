@@ -1,6 +1,7 @@
-package org.tarantool.orm;
+package org.tarantool.orm.entity;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Created by GrIfOn on 20.12.2017.
@@ -41,6 +42,11 @@ final public class TarantoolField<T extends Serializable> {
 
     @Override
     public String toString() {
+        if (value.getClass().isArray()) {
+            return Arrays.toString((Object[]) value)
+                    .replace('[', '{')
+                    .replace(']', '}');
+        }
         return value.toString();
     }
 }

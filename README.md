@@ -7,6 +7,11 @@ It is the wrapper for the [TarantoolConnector](https://github.com/tarantool/tara
 1. Add a dependency to your `pom.xml` file.
 
 ```xml
+        <dependency>
+            <groupId>com.github.Gr1f0n6x</groupId>
+            <artifactId>tarantoolorm</artifactId>
+            <version>0.3.9.2</version>
+        </dependency>
 ```
 
 2. Create a sublcass of `TarantoolTuple`. Specidy index list, fields and index parts using annotations 

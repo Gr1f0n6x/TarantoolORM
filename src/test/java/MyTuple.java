@@ -48,4 +48,17 @@ public class MyTuple extends TarantoolTuple {
         this.f.setValue(f);
         this.g.setValue(g);
     }
+
+    @Override
+    public String toString() {
+        return "MyTuple{" +
+                "f=" + f +
+                ", a=" + a +
+                ", b=" + b +
+                ", c=" + c +
+                ", d=" + d +
+                ", e=" + e +
+                ", g=" + g +
+                '}';
+    }
 }

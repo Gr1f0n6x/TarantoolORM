@@ -106,7 +106,7 @@ abstract public class TarantoolTuple {
                 field.setAccessible(true);
                 TarantoolField tarantoolField = (TarantoolField) field.get(this);
 
-                update.add(Arrays.asList(OperatorType.ASSIGMENT.getType(), key, tarantoolField.getValue()));
+                update.add(Arrays.asList(OperatorType.ASSIGMENT.getType(), key - 1, tarantoolField.getValue()));
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();

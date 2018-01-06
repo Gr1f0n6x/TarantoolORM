@@ -92,12 +92,6 @@ public class AsyncIndexTest {
         }
     }
 
-    @Test
-    public void testIndexBSize() throws TarantoolIndexNullPointerException {
-        assertEquals("[49152]", space.index(true).bsize().get().toString());
-        assertEquals("[49152]", space.index(false).bsize().get().toString());
-    }
-
     @After
     public void testAlter() throws TarantoolIndexNullPointerException {
         space.index(false).alter(true, IndexType.HASH);

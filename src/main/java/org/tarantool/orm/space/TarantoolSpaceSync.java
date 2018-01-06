@@ -11,6 +11,7 @@ import org.tarantool.orm.common.type.IteratorType;
 import org.tarantool.orm.index.TarantoolIndex;
 import org.tarantool.orm.index.TarantoolIndexSync;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**

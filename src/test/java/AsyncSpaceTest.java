@@ -26,7 +26,7 @@ public class AsyncSpaceTest {
 
     @Test
     public void testTupleIndexFields() {
-        assertEquals("{secondary=[@org.tarantool.orm.common.annotations.IndexField(type=scalar, part=3, indexName=secondary)], primary=[@org.tarantool.orm.common.annotations.IndexField(type=integer, part=1, indexName=primary), @org.tarantool.orm.common.annotations.IndexField(type=unsigned, part=2, indexName=primary)]}", space.getIndexFields().toString());
+        assertEquals("{secondary=[@org.tarantool.orm.common.annotations.IndexField(type=str, part=3, indexName=secondary)], primary=[@org.tarantool.orm.common.annotations.IndexField(type=integer, part=1, indexName=primary), @org.tarantool.orm.common.annotations.IndexField(type=unsigned, part=2, indexName=primary)]}", space.getIndexFields().toString());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class AsyncSpaceTest {
         MyTuple update = new MyTuple(4, 4L, "update", new Integer[] {1,2,3,4}, "value", 1, 1);
         try {
             space.insert(tuple);
-            assertEquals("[MyTuple{f=[1, 2, 3, 4], a=4, b=4, c=4, d=value, e=update, g=1}]", space.update(update, true).get().toString());
+            assertEquals("[MyTuple{f=1, a=4, b=4, c=update, d=[1, 2, 3, 4], e=value, g=1}]", space.update(update, true).get().toString());
         } finally {
             space.delete(tuple, true);
         }
@@ -105,7 +105,7 @@ public class AsyncSpaceTest {
         try {
             space.insert(tuple);
             space.upsert(upsert, true);
-            assertEquals("[MyTuple{f=[1, 2, 3, 4], a=6, b=6, c=6, d=value, e=upsert, g=1}]", space.select(upsert, true, 0, 1, IteratorType.EQ).get().toString());
+            assertEquals("[MyTuple{f=1, a=6, b=6, c=upsert, d=[1, 2, 3, 4], e=value, g=1}]", space.select(upsert, true, 0, 1, IteratorType.EQ).get().toString());
         } finally {
             space.delete(upsert, true);
         }

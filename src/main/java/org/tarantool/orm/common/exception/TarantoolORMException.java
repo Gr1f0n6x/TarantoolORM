@@ -1,4 +1,4 @@
-package org.tarantool.orm.exception;
+package org.tarantool.orm.common.exception;
 
 /**
  * Created by GrIfOn on 20.12.2017.

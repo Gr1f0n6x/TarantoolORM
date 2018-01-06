@@ -42,6 +42,10 @@ final public class TarantoolField<T extends Serializable> {
 
     @Override
     public String toString() {
+        if (value == null) {
+            return null;
+        }
+
         if (value.getClass().isArray()) {
             return Arrays.toString((Object[]) value)
                     .replace('[', '{')

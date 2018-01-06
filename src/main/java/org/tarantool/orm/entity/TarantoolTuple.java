@@ -11,19 +11,17 @@ import java.util.*;
  * Created by GrIfOn on 20.12.2017.
  */
 abstract public class TarantoolTuple {
-    public static Map<Integer, String> fieldMap;
-
     public TarantoolTuple() {}
 
     public final int getFieldCount() {
-        return fieldMap.size();
+        return 0;
     }
 
-    public static <T extends TarantoolTuple> TarantoolTuple build(Class<T> type, List<?> values) {
+    public static <T extends TarantoolTuple> TarantoolTuple build(Class<T> type, Map<Integer, String> fieldMap, List<?> values) {
         TarantoolTuple tuple = null;
         try {
             tuple = type.newInstance();
-            tuple.initFromList(values);
+            tuple.initFromList(fieldMap, values);
         } catch (NoSuchFieldException | InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -31,7 +29,7 @@ abstract public class TarantoolTuple {
         return tuple;
     }
 
-    public static <T extends TarantoolTuple> void retrieveFieldMap(Class<T> type) {
+    public static <T extends TarantoolTuple> Map<Integer, String> retrieveFieldMap(Class<T> type) {
         Map<Integer, String> map = new HashMap<>();
 
         Field[] fields = type.getDeclaredFields();
@@ -45,10 +43,10 @@ abstract public class TarantoolTuple {
             }
         }
 
-        fieldMap = map;
+        return map;
     }
 
-    public void initFromList(List<?> values) throws NoSuchFieldException, IllegalAccessException {
+    public void initFromList(Map<Integer, String> fieldMap, List<?> values) throws NoSuchFieldException, IllegalAccessException {
         Iterator<?> valIter = values.iterator();
 
         for(int i = 1; i <= fieldMap.size() && valIter.hasNext(); ++i) {
@@ -61,7 +59,7 @@ abstract public class TarantoolTuple {
         }
     }
 
-    final public List<?> getValues() {
+    final public List<?> getValues(Map<Integer, String> fieldMap) {
         List<Object> values = new ArrayList<>();
 
         for(int i = 1; i <= fieldMap.size(); ++i) {
@@ -79,7 +77,7 @@ abstract public class TarantoolTuple {
         return values;
     }
 
-    final public List<?> getIndexValues(String indexName) {
+    final public List<?> getIndexValues(Map<Integer, String> fieldMap, String indexName) {
         List<Object> values = new ArrayList<>();
 
         for(int i = 1; i <= fieldMap.size(); ++i) {
@@ -99,7 +97,7 @@ abstract public class TarantoolTuple {
         return values;
     }
 
-    final public Object[] getValuesForUpdate() {
+    final public Object[] getValuesForUpdate(Map<Integer, String> fieldMap) {
         List<List<?>> update = new ArrayList<>();
 
         try {
@@ -108,29 +106,12 @@ abstract public class TarantoolTuple {
                 field.setAccessible(true);
                 TarantoolField tarantoolField = (TarantoolField) field.get(this);
 
-                update.add(Arrays.asList(OperatorType.ASSIGMENT.getType(), key - 1, tarantoolField.toString()));
+                update.add(Arrays.asList(OperatorType.ASSIGMENT.getType(), key, tarantoolField.getValue()));
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
 
         return update.toArray();
-    }
-
-    @Override
-    public String toString() {
-        List<String> values = new ArrayList<>();
-        try {
-            for(Integer key : fieldMap.keySet()) {
-                Field field = this.getClass().getDeclaredField(fieldMap.get(key));
-                field.setAccessible(true);
-                TarantoolField tarantoolField = (TarantoolField) field.get(this);
-                values.add(tarantoolField.toString());
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
-        return "Tuple{" + values.toString() +  "}";
     }
 }

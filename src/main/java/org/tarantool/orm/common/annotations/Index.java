@@ -1,5 +1,6 @@
 package org.tarantool.orm.common.annotations;
 
+import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 
 import java.lang.annotation.*;
@@ -15,4 +16,5 @@ public @interface Index {
     IndexType type() default IndexType.TREE;
     boolean unique() default false;
     boolean ifNotExists() default false;
+    CollationType collationType() default CollationType.BINARY;
 }

@@ -5,6 +5,7 @@ import org.tarantool.orm.common.annotations.IndexField;
 import org.tarantool.orm.common.operation.result.TarantoolPrimitiveResultSetSync;
 import org.tarantool.orm.common.operation.result.TarantoolResultSet;
 import org.tarantool.orm.common.operation.result.TarantoolTupleResultSetSync;
+import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 import org.tarantool.orm.common.type.IteratorType;
 import org.tarantool.orm.entity.TarantoolTuple;
@@ -16,8 +17,8 @@ import java.util.Map;
  * Created by GrIfOn on 03.01.2018.
  */
 final public class TarantoolIndexSync<T extends TarantoolTuple> extends TarantoolIndex<T> {
-    public TarantoolIndexSync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique) {
-        super(client, spaceName, type, indexName, indexFields, fields, indexType, ifNotExists, unique);
+    public TarantoolIndexSync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique, CollationType collationType) {
+        super(client, spaceName, type, indexName, indexFields, fields, indexType, ifNotExists, unique, collationType);
     }
 
     @Override

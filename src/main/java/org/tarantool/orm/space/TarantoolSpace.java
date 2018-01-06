@@ -60,7 +60,7 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
 
         this.type = type;
         this.fields = TarantoolTuple.retrieveFieldMap(type);
-        if (this.fields.size() != fieldCount) {
+        if (fieldCount > 0 && this.fields.size() != fieldCount) {
             throw new TarantoolORMException("Field count should equals to fields size");
         }
 

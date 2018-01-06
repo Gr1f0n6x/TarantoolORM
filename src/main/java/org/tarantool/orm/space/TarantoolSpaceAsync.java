@@ -132,7 +132,8 @@ final public class TarantoolSpaceAsync<T extends TarantoolTuple> extends Taranto
                 fields,
                 index.type(),
                 index.ifNotExists(),
-                index.unique()
+                index.unique(),
+                index.collationType()
         );
     }
 }

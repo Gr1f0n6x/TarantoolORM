@@ -1,6 +1,7 @@
 import org.tarantool.orm.common.annotations.Field;
 import org.tarantool.orm.common.annotations.Index;
 import org.tarantool.orm.common.annotations.Indexes;
+import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 import org.tarantool.orm.entity.TarantoolField;
 import org.tarantool.orm.entity.TarantoolTuple;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 @Indexes(indexList = {
         @Index(name = "primary", type = IndexType.HASH, unique = true, ifNotExists = true),
-        @Index(name = "secondary", type = IndexType.TREE, ifNotExists = true)
+        @Index(name = "secondary", type = IndexType.TREE, ifNotExists = true, collationType = CollationType.UNICODE)
 })
 public class MyTuple extends TarantoolTuple {
     @Field(position = 6)
@@ -26,7 +27,7 @@ public class MyTuple extends TarantoolTuple {
     @IndexField(indexName = "primary", part = 2, type = TarantoolType.UNSIGNED)
     TarantoolField<Long> b = new TarantoolField<>(20L);
     @Field(position = 3)
-    @IndexField(indexName = "secondary",  part = 3, type = TarantoolType.SCALAR)
+    @IndexField(indexName = "secondary",  part = 3, type = TarantoolType.STRING)
     TarantoolField<String> c = new TarantoolField<>("value");
     @Field(position = 5)
     TarantoolField<Integer[]> d = new TarantoolField<>(new Integer[] {1, 2, 3, 4});

@@ -128,7 +128,8 @@ final public class TarantoolSpaceSync<T extends TarantoolTuple> extends Tarantoo
                 fields,
                 index.type(),
                 index.ifNotExists(),
-                index.unique()
+                index.unique(),
+                index.collationType()
         );
     }
 }

@@ -4,6 +4,7 @@ import org.tarantool.TarantoolClient;
 import org.tarantool.orm.common.annotations.IndexField;
 import org.tarantool.orm.common.operation.TarantoolIndexOps;
 import org.tarantool.orm.common.operation.result.TarantoolResultSet;
+import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 import org.tarantool.orm.common.type.IteratorType;
 import org.tarantool.orm.entity.TarantoolTuple;
@@ -22,6 +23,7 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
     protected IndexType indexType;
     protected boolean ifNotExists;
     protected boolean unique;
+    protected CollationType collationType;
     protected List<IndexField> indexFields;
     protected Map<Integer, String> fields;
 
@@ -29,7 +31,7 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
     protected Class<T> type;
     protected String spaceName;
 
-    public TarantoolIndex(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique) {
+    public TarantoolIndex(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique, CollationType collationType) {
         this.client = client;
         this.spaceName = spaceName;
         this.name = indexName;
@@ -39,14 +41,17 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
         this.type = type;
         this.ifNotExists = ifNotExists;
         this.unique = unique;
+        this.collationType = collationType;
 
-        String query = String.format("box.space.%s:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s}})",
+        String query = String.format("box.space.%s:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s, collation=%s}})",
                 this.spaceName,
                 this.name,
                 this.indexType.getType(),
                 this.ifNotExists,
                 this.unique,
-                String.join(", ", indexFields.stream().map(x -> String.format("%d, '%s'", x.part(), x.type())).collect(Collectors.toList())));
+                String.join(", ", indexFields.stream().map(x -> String.format("%d, '%s'", x.part(), x.type())).collect(Collectors.toList())),
+                this.collationType.getName()
+                );
 
         this.eval(query);
 

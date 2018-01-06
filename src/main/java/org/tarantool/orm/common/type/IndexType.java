@@ -1,4 +1,4 @@
-package org.tarantool.orm.type;
+package org.tarantool.orm.common.type;
 
 /**
  * Created by GrIfOn on 20.12.2017.

@@ -10,14 +10,15 @@ import org.tarantool.orm.common.type.IteratorType;
 import org.tarantool.orm.entity.TarantoolTuple;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 /**
  * Created by GrIfOn on 03.01.2018.
  */
 final public class TarantoolIndexAsync<T extends TarantoolTuple> extends TarantoolIndex<T> {
-    public TarantoolIndexAsync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, IndexType indexType, boolean ifNotExists, boolean unique) {
-        super(client, spaceName, type, indexName, indexFields, indexType, ifNotExists, unique);
+    public TarantoolIndexAsync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique) {
+        super(client, spaceName, type, indexName, indexFields, fields, indexType, ifNotExists, unique);
     }
 
     @Override
@@ -26,43 +27,33 @@ final public class TarantoolIndexAsync<T extends TarantoolTuple> extends Taranto
     }
 
     @Override
-    public TarantoolResultSet<T> select(T key, long offset, long limit, IteratorType iteratorType) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.selectQuery(key, offset, limit, iteratorType)), this.type);
-    }
-
-    @Override
-    public TarantoolResultSet<T> get(T key) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.getQuery(key)), type);
-    }
-
-    @Override
     public TarantoolResultSet<T> min() {
-        return new TarantoolTupleResultSetAsync<>(eval(this.minQuery()), type);
+        return new TarantoolTupleResultSetAsync<>(eval(this.minQuery()), type, fields);
     }
 
     @Override
     public TarantoolResultSet<T> max() {
-        return new TarantoolTupleResultSetAsync<>(eval(this.maxQuery()), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.maxQuery()), type, fields);    }
 
     @Override
     public TarantoolResultSet<T> min(T key) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.minQuery(key)), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.minQuery(key)), type, fields);    }
 
     @Override
     public TarantoolResultSet<T> max(T key) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.maxQuery(key)), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.maxQuery(key)), type, fields);    }
 
     @Override
     public TarantoolResultSet<T> random(int seed) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.randomQuery(seed)), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.randomQuery(seed)), type, fields);    }
 
     @Override
     public TarantoolResultSet<T> update(T tuple) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.getQuery(tuple)), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.getQuery(tuple)), type, fields);    }
 
     @Override
     public TarantoolResultSet<T> delete(T tuple) {
-        return new TarantoolTupleResultSetAsync<>(eval(this.getQuery(tuple)), type);    }
+        return new TarantoolTupleResultSetAsync<>(eval(this.getQuery(tuple)), type, fields);    }
 
     @Override
     public TarantoolResultSet<Long> count(T key) {
@@ -80,17 +71,8 @@ final public class TarantoolIndexAsync<T extends TarantoolTuple> extends Taranto
     }
 
     @Override
-    public void alter(boolean unique, IndexType type) {
-        eval(this.alterQuery(unique, type));
-    }
-
-    @Override
-    public void drop() {
-        eval(this.dropQuery());
-    }
-
-    @Override
-    public void rename(String newName) {
-        eval(this.renameQuery(newName));
+    protected TarantoolResultSet<Integer> retrieveIndexId() {
+        String query = String.format("return box.space.%s.index.%s.id", this.spaceName, this.name);
+        return new TarantoolPrimitiveResultSetAsync<>(eval(query));
     }
 }

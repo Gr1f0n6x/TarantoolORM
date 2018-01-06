@@ -9,8 +9,6 @@ import org.tarantool.orm.common.operation.result.TarantoolResultSet;
  * Created by GrIfOn on 03.01.2018.
  */
 public interface TarantoolIndexOps<T extends TarantoolTuple> extends TarantoolOps<T> {
-    TarantoolResultSet<T> select(T key, long offset, long limit, IteratorType iteratorType);
-    TarantoolResultSet<T> get(T key);
     TarantoolResultSet<T> min();
     TarantoolResultSet<T> min(T key);
     TarantoolResultSet<T> max();

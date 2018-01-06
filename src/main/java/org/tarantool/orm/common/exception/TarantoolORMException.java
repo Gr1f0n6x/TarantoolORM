@@ -3,7 +3,7 @@ package org.tarantool.orm.common.exception;
 /**
  * Created by GrIfOn on 20.12.2017.
  */
-public class TarantoolORMException extends Exception {
+public class TarantoolORMException extends RuntimeException {
     public TarantoolORMException() {
     }
 

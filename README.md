@@ -2,6 +2,10 @@
 
 It is the wrapper for the [TarantoolConnector](https://github.com/tarantool/tarantool-java)
 
+## Requirements
+* Java 1.8 or higher
+* Tarantool 1.7
+
 ## Getting Started
 
 1. Add a dependency to your `pom.xml` file.

@@ -1,7 +1,10 @@
 package org.tarantool.orm.space;
 
 import org.tarantool.orm.common.annotations.Index;
+import org.tarantool.orm.common.annotations.IndexFieldParams;
 import org.tarantool.orm.common.annotations.Indexes;
+import org.tarantool.orm.common.type.CollationType;
+import org.tarantool.orm.common.type.TarantoolType;
 import org.tarantool.orm.entity.TarantoolField;
 import org.tarantool.orm.index.TarantoolIndex;
 import org.tarantool.orm.common.operation.result.TarantoolResultSet;
@@ -12,6 +15,8 @@ import org.tarantool.orm.common.exception.TarantoolORMException;
 import org.tarantool.TarantoolClient;
 import org.tarantool.orm.common.type.IteratorType;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,7 +29,7 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
     private boolean ifNotExists;
     private boolean temporary;
     protected Class<T> type;
-    private Map<String, List<IndexField>> indexFields;
+    private Map<String, List<Tuple>>  indexFields;
     protected Map<Integer, String> fields;
 
     protected TarantoolClient client;
@@ -32,8 +37,7 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
     protected int fieldCount;
     protected int spaceId;
 
-    protected TarantoolIndex<T> primary;
-    protected TarantoolIndex<T> secondary;
+    protected Map<String, TarantoolIndex<T>> indexes = new HashMap<>();
 
     public TarantoolSpace(TarantoolClient client, Class<T> type, String spaceName) throws TarantoolORMException {
         this(client, type, spaceName, false, 0, false);
@@ -70,11 +74,11 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
         initIndexes();
     }
 
-    final public TarantoolIndex<T> index(boolean primary) {
-        return primary ? this.primary : this.secondary;
+    final public TarantoolIndex<T> index(String indexName) {
+        return indexes.get(indexName);
     }
 
-    final public Map<String, List<IndexField>> getIndexFields() {
+    final public Map<String, List<Tuple>>  getIndexFields() {
         return indexFields;
     }
 
@@ -82,13 +86,7 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
         Indexes indexes = type.getAnnotation(Indexes.class);
 
         for(Index index : indexes.indexList()) {
-            if(this.primary == null) {
-                primary = createIndex(index);
-            } else if(secondary == null) {
-                secondary = createIndex(index);
-            } else {
-                break;
-            }
+            this.indexes.put(index.name(), createIndex(index));
         }
     }
 
@@ -98,24 +96,39 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
 
     public abstract TarantoolResultSet<T> insert(T tuple);
 
-    public abstract TarantoolResultSet<T> update(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException;
+    public abstract TarantoolResultSet<T> update(T tuple, String indexName) throws TarantoolIndexNullPointerException;
 
     public abstract TarantoolResultSet<T> replace(T tuple);
 
-    public abstract TarantoolResultSet<T> delete(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException;
+    public abstract TarantoolResultSet<T> delete(T tuple, String indexName) throws TarantoolIndexNullPointerException;
 
-    public abstract TarantoolResultSet<T> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException;
+    public abstract TarantoolResultSet<T> upsert(T tuple, String indexName) throws TarantoolIndexNullPointerException;
 
-    public abstract TarantoolResultSet<T> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolIndexNullPointerException;
+    public abstract TarantoolResultSet<T> select(T tuple, String indexName, int offset, int limit, IteratorType iteratorType) throws TarantoolIndexNullPointerException;
 
-    private Map<String, List<IndexField>> indexFields() {
-        return Stream.of(this.type.getDeclaredFields())
+    private Map<String, List<Tuple>>  indexFields() {
+        List<IndexField> indexFields = Stream.of(this.type.getDeclaredFields())
                 .filter(x -> {
                     x.setAccessible(true);
                     return x.getType().equals(TarantoolField.class) && x.isAnnotationPresent(IndexField.class);
                 })
-                .map(x -> x.getAnnotation(IndexField.class))
-                .collect(Collectors.groupingBy(IndexField::indexName));
+                .map(x -> x.getAnnotation(IndexField.class)).collect(Collectors.toList());
+
+        Map<String, List<Tuple>> indexFieldsMap = new HashMap<>();
+
+        for(IndexField indexField : indexFields) {
+            for(IndexFieldParams param : indexField.params()) {
+                if(indexFieldsMap.get(param.indexName()) == null) {
+                    List<Tuple> pairs = new ArrayList<>();
+                    pairs.add(new Tuple(indexField.type(), indexField.part(), indexField.collationType(), param));
+                    indexFieldsMap.put(param.indexName(), pairs);
+                } else {
+                    indexFieldsMap.get(param.indexName()).add(new Tuple(indexField.type(), indexField.part(), indexField.collationType(), param));
+                }
+            }
+        }
+
+        return indexFieldsMap;
     }
 
     private void initSpace() {
@@ -129,4 +142,28 @@ public abstract class TarantoolSpace<T extends TarantoolTuple> {
     }
 
     protected abstract Integer getId(String query);
+
+    public static class Tuple {
+        public final TarantoolType type;
+        public final int part;
+        public final CollationType collationType;
+        public final IndexFieldParams field;
+
+        public Tuple(TarantoolType type, int part, CollationType collationType, IndexFieldParams field) {
+            this.type = type;
+            this.part = part;
+            this.collationType = collationType;
+            this.field = field;
+        }
+
+        @Override
+        public String toString() {
+            return "IndexFieldParams{" +
+                    "type=" + type +
+                    ", part=" + part +
+                    ", collationType=" + collationType +
+                    ", field=" + field +
+                    '}';
+        }
+    }
 }

@@ -9,6 +9,7 @@ import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 import org.tarantool.orm.common.type.IteratorType;
 import org.tarantool.orm.entity.TarantoolTuple;
+import org.tarantool.orm.space.TarantoolSpace;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +19,8 @@ import java.util.concurrent.Future;
  * Created by GrIfOn on 03.01.2018.
  */
 final public class TarantoolIndexAsync<T extends TarantoolTuple> extends TarantoolIndex<T> {
-    public TarantoolIndexAsync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique, CollationType collationType) {
-        super(client, spaceName, type, indexName, indexFields, fields, indexType, ifNotExists, unique, collationType);
+    public TarantoolIndexAsync(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<TarantoolSpace.Tuple> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique) {
+        super(client, spaceName, type, indexName, indexFields, fields, indexType, ifNotExists, unique);
     }
 
     @Override

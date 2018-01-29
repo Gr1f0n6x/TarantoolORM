@@ -51,14 +51,14 @@ final public class TarantoolSpaceAsync<T extends TarantoolTuple> extends Taranto
     }
 
     @Override
-    public TarantoolResultSet<T> update(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolIndexNullPointerException();
+    public TarantoolResultSet<T> update(T tuple, String indexName) throws TarantoolIndexNullPointerException {
+        if (this.indexes.get(indexName) == null) throw new TarantoolIndexNullPointerException();
 
         return new TarantoolTupleResultSetAsync<>(this.client
                 .asyncOps()
                 .update(
                         this.spaceId,
-                        tuple.getIndexValues(fields, usePrimaryIndex ? this.primary.getName() : this.secondary.getName()),
+                        tuple.getIndexValues(fields, this.indexes.get(indexName).getName()),
                         tuple.getValuesForUpdate(fields)
                 ), type, fields);
     }
@@ -74,37 +74,37 @@ final public class TarantoolSpaceAsync<T extends TarantoolTuple> extends Taranto
     }
 
     @Override
-    public TarantoolResultSet<T> delete(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolIndexNullPointerException();
+    public TarantoolResultSet<T> delete(T tuple, String indexName) throws TarantoolIndexNullPointerException {
+        if (this.indexes.get(indexName) == null) throw new TarantoolIndexNullPointerException();
 
         return new TarantoolTupleResultSetAsync<>(this.client.asyncOps().delete(
                 this.spaceId,
-                tuple.getIndexValues(fields, usePrimaryIndex ? this.primary.getName() : this.secondary.getName())
+                tuple.getIndexValues(fields, this.indexes.get(indexName).getName())
         ), type, fields);
     }
 
     @Override
-    public TarantoolResultSet<T> upsert(T tuple, boolean usePrimaryIndex) throws TarantoolIndexNullPointerException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolIndexNullPointerException();
+    public TarantoolResultSet<T> upsert(T tuple, String indexName) throws TarantoolIndexNullPointerException {
+        if (this.indexes.get(indexName) == null) throw new TarantoolIndexNullPointerException();
 
         return new TarantoolTupleResultSetAsync<>(this.client
                 .asyncOps()
                 .upsert(
                         this.spaceId,
-                        tuple.getIndexValues(fields, usePrimaryIndex ? this.primary.getName() : this.secondary.getName()),
+                        tuple.getIndexValues(fields, this.indexes.get(indexName).getName()),
                         tuple.getValues(fields),
                         tuple.getValuesForUpdate(fields)
                 ), type, fields);
     }
 
     @Override
-    public TarantoolResultSet<T> select(T tuple, boolean usePrimaryIndex, int offset, int limit, IteratorType iteratorType) throws TarantoolIndexNullPointerException {
-        if (usePrimaryIndex && this.primary == null || !usePrimaryIndex && this.secondary == null) throw new TarantoolIndexNullPointerException();
+    public TarantoolResultSet<T> select(T tuple, String indexName, int offset, int limit, IteratorType iteratorType) throws TarantoolIndexNullPointerException {
+        if (this.indexes.get(indexName) == null) throw new TarantoolIndexNullPointerException();
 
         return new TarantoolTupleResultSetAsync<>(this.client.asyncOps().select(
                 this.spaceId,
-                usePrimaryIndex ? this.primary.getIndexId(): this.secondary.getIndexId(),
-                tuple.getIndexValues(fields, usePrimaryIndex ? this.primary.getName() : this.secondary.getName()),
+                this.indexes.get(indexName).getIndexId(),
+                tuple.getIndexValues(fields, this.indexes.get(indexName).getName()),
                 offset,
                 limit,
                 iteratorType.getType()
@@ -132,8 +132,7 @@ final public class TarantoolSpaceAsync<T extends TarantoolTuple> extends Taranto
                 fields,
                 index.type(),
                 index.ifNotExists(),
-                index.unique(),
-                index.collationType()
+                index.unique()
         );
     }
 }

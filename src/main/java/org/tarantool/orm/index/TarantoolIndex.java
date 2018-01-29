@@ -7,7 +7,9 @@ import org.tarantool.orm.common.operation.result.TarantoolResultSet;
 import org.tarantool.orm.common.type.CollationType;
 import org.tarantool.orm.common.type.IndexType;
 import org.tarantool.orm.common.type.IteratorType;
+import org.tarantool.orm.common.type.TarantoolType;
 import org.tarantool.orm.entity.TarantoolTuple;
+import org.tarantool.orm.space.TarantoolSpace;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,15 +25,14 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
     protected IndexType indexType;
     protected boolean ifNotExists;
     protected boolean unique;
-    protected CollationType collationType;
-    protected List<IndexField> indexFields;
+    protected List<TarantoolSpace.Tuple> indexFields;
     protected Map<Integer, String> fields;
 
     protected TarantoolClient client;
     protected Class<T> type;
     protected String spaceName;
 
-    public TarantoolIndex(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<IndexField> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique, CollationType collationType) {
+    public TarantoolIndex(TarantoolClient client, String spaceName, Class<T> type, String indexName, List<TarantoolSpace.Tuple> indexFields, Map<Integer, String> fields, IndexType indexType, boolean ifNotExists, boolean unique) {
         this.client = client;
         this.spaceName = spaceName;
         this.name = indexName;
@@ -41,16 +42,14 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
         this.type = type;
         this.ifNotExists = ifNotExists;
         this.unique = unique;
-        this.collationType = collationType;
 
-        String query = String.format("box.space.%s:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s, collation=%s}})",
+        String query = String.format("box.space.%s:create_index('%s', {type='%s', if_not_exists=%s, unique=%s, parts={%s}})",
                 this.spaceName,
                 this.name,
                 this.indexType.getType(),
                 this.ifNotExists,
                 this.unique,
-                String.join(", ", indexFields.stream().map(x -> String.format("%d, '%s'", x.part(), x.type())).collect(Collectors.toList())),
-                this.collationType.getName()
+                String.join(", ", indexFields.stream().map(this::formatPart).collect(Collectors.toList()))
                 );
 
         this.eval(query);
@@ -81,7 +80,7 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
     final public String parts() {
         return this.indexFields
                 .stream()
-                .map(x -> String.format("IndexField{%d, %s}", x.part(), x.type().getType()))
+                .map(x -> String.format("IndexField{%d, %s}", x.part, x.type.getType()))
                 .collect(Collectors.toList())
                 .toString();
     }
@@ -165,6 +164,14 @@ public abstract class TarantoolIndex<T extends TarantoolTuple> implements Tarant
     }
 
     abstract protected TarantoolResultSet<Integer> retrieveIndexId();
+
+    private String formatPart(TarantoolSpace.Tuple tuple) {
+        if(tuple.type == TarantoolType.STRING && tuple.collationType != CollationType.BINARY) {
+            return String.format("{%d, '%s', is_nullable=%s, collation='%s'}", tuple.part, tuple.type, tuple.field.isNullable(), tuple.collationType.getName());
+        }
+
+        return String.format("{%d, '%s', is_nullable=%s}", tuple.part, tuple.type, tuple.field.isNullable());
+    }
 
     private String values2String(List<?> values) {
         return String.join(", ", values.stream().map(x -> {

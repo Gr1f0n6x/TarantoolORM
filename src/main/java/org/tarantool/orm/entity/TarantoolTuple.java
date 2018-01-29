@@ -6,6 +6,7 @@ import org.tarantool.orm.common.type.OperatorType;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Created by GrIfOn on 20.12.2017.
@@ -85,7 +86,7 @@ abstract public class TarantoolTuple {
 
             try {
                 Field field = this.getClass().getDeclaredField(fieldName);
-                if(field.getAnnotation(IndexField.class) != null && indexName.equals(field.getAnnotation(IndexField.class).indexName())) {
+                if(field.getAnnotation(IndexField.class) != null && Stream.of(field.getAnnotation(IndexField.class).params()).anyMatch(x -> x.indexName().equals(indexName))) {
                     field.setAccessible(true);
                     values.add(((TarantoolField) field.get(this)).getValue());
                 }

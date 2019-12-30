@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.Gr1f0n6x</groupId>
+    <groupId>com.nryanov.tarantool</groupId>
     <artifactId>tarantoolorm</artifactId>
-    <version>0.4</version>
+    <version>0.5</version>
 
     <name>tarantoolorm</name>
     <description>ORM wrapper for TarantoolConnector</description>
-    <url>https://github.com/Gr1f0n6x/TarantoolORM</url>
+    <url>https://github.com/nryanov/TarantoolORM</url>
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
+            <name>Apache License</name>
+            <url>http://www.apache.org/licenses/</url>
         </license>
     </licenses>
     <developers>
@@ -24,9 +24,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git@github.com:Gr1f0n6x/TarantoolORM.git</connection>
-        <developerConnection>scm:git:git@github.com:Gr1f0n6x/TarantoolORM.git</developerConnection>
-        <url>https://github.com/Gr1f0n6x/TarantoolORM</url>
+        <connection>scm:git:git@github.com:nryanov/TarantoolORM.git</connection>
+        <developerConnection>scm:git:git@github.com:nryanov/TarantoolORM.git</developerConnection>
+        <url>https://github.com/nryanov/TarantoolORM</url>
     </scm>
 
     <distributionManagement>

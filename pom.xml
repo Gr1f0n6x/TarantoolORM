@@ -5,12 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.nryanov.tarantool</groupId>
-    <artifactId>tarantoolorm</artifactId>
+    <artifactId>tarantool-orm</artifactId>
     <version>0.5</version>
 
-    <name>tarantoolorm</name>
+    <name>tarantool-orm</name>
     <description>ORM wrapper for TarantoolConnector</description>
-    <url>https://github.com/nryanov/TarantoolORM</url>
+    <url>https://github.com/nryanov/tarantool-orm</url>
+
     <licenses>
         <license>
             <name>Apache License</name>
@@ -24,9 +25,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git@github.com:nryanov/TarantoolORM.git</connection>
-        <developerConnection>scm:git:git@github.com:nryanov/TarantoolORM.git</developerConnection>
-        <url>https://github.com/nryanov/TarantoolORM</url>
+        <connection>scm:git:git@github.com:nryanov/tarantool-orm.git</connection>
+        <developerConnection>scm:git:git@github.com:nryanov/tarantool-orm.git</developerConnection>
+        <url>https://github.com/nryanov/tarantool-orm</url>
     </scm>
 
     <distributionManagement>
@@ -48,6 +49,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
@@ -93,16 +95,67 @@
         </plugins>
     </build>
 
+    <properties>
+        <auto-service-version>1.0-rc6</auto-service-version>
+        <javapoet-version>1.11.1</javapoet-version>
+        <tarantool-connector-version>1.9.4</tarantool-connector-version>
+        <slf4j-api-version>1.7.30</slf4j-api-version>
+        <logback-version>1.2.3</logback-version>
+        <testcontainers-version>1.12.4</testcontainers-version>
+        <junit-version>4.12</junit-version>
+        <google-truth-version>1.0</google-truth-version>
+        <google-compile-testing-version>0.18</google-compile-testing-version>
+    </properties>
+
     <dependencies>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <version>${auto-service-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>${javapoet-version}</version>
+        </dependency>
         <dependency>
             <groupId>org.tarantool</groupId>
             <artifactId>connector</artifactId>
-            <version>1.7.4</version>
+            <version>${tarantool-connector-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-api-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers-version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${junit-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+            <version>${google-truth-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.testing.compile</groupId>
+            <artifactId>compile-testing</artifactId>
+            <version>${google-compile-testing-version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

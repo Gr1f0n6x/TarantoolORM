@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 final class FieldMeta {
-    private final VariableElement tupleField;
+    public final VariableElement tupleField;
     public final String fieldName;
     public final int position;
     public final boolean isIndexed;
@@ -20,7 +20,7 @@ final class FieldMeta {
         return new FieldMeta(element);
     }
 
-    public FieldMeta(VariableElement variableElement) {
+    private FieldMeta(VariableElement variableElement) {
         this.tupleField = variableElement;
         this.fieldName = variableElement.getSimpleName().toString();
 
@@ -37,13 +37,13 @@ final class FieldMeta {
 
             List<IndexFieldMeta> indexFieldMetas = new ArrayList<>();
             for (IndexedFieldParams params : indexField.indexes()) {
-                indexFieldMetas.add(IndexFieldMeta.getInstance(params.indexName(), params.part(), params.isNullable()));
+                indexFieldMetas.add(IndexFieldMeta.getInstance(variableElement, params.indexName(), params.part(), params.isNullable()));
             }
 
             this.indexFieldMetas = Collections.unmodifiableList(indexFieldMetas);
         } else {
             this.isIndexed = false;
-            this.indexFieldMetas = null;
+            this.indexFieldMetas = Collections.unmodifiableList(Collections.emptyList());
         }
     }
 }

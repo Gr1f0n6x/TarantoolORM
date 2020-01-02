@@ -34,6 +34,106 @@ public class TupleProcessorTest {
     );
 
     @Test
+    public void emptyIndexNameError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Index name should not be empty");
+    }
+
+    @Test
+    public void noIndexError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = {}, spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Tuple DataClass must have at least one index");
+    }
+
+    @Test
+    public void duplicateIndexError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = {@Index(name = \"primary\", isPrimary = true), @Index(name = \"primary\", isPrimary = true)}, spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Index names should be unique");
+    }
+
+    @Test
+    public void noPrimaryIndexError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Tuple DataClass does not have primary index");
+    }
+
+    @Test
     public void interfaceAnnotatedByTupleError() {
         final JavaFileObject input = JavaFileObjects.forSourceString(
                 "test.DataClass",
@@ -41,8 +141,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"test\")",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "public interface DataClass {",
                         "}"
                 )
@@ -64,8 +165,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"\")",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"\")",
                         "public class DataClass {",
                         "private int id;",
                         "}"
@@ -88,8 +190,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"test\")",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "public class DataClass {",
                         "}"
                 )
@@ -111,8 +214,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"test\")",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "class DataClass {",
                         "private int id;",
                         "}"
@@ -135,8 +239,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"test\")",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "public abstract class DataClass {",
                         "private int id;",
                         "}"
@@ -159,8 +264,9 @@ public class TupleProcessorTest {
                         "package test;",
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
                         "",
-                        "@Tuple(spaceName = \"test\")",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
                         "}"

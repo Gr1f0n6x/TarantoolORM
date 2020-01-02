@@ -105,6 +105,7 @@
         <junit-version>4.12</junit-version>
         <google-truth-version>1.0</google-truth-version>
         <google-compile-testing-version>0.18</google-compile-testing-version>
+        <google-guava-version>28.1-jre</google-guava-version>
     </properties>
 
     <dependencies>
@@ -117,6 +118,11 @@
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
             <version>${javapoet-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${google-guava-version}</version>
         </dependency>
         <dependency>
             <groupId>org.tarantool</groupId>

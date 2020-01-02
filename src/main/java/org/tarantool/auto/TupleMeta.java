@@ -4,13 +4,15 @@ package org.tarantool.auto;
 import org.tarantool.orm.annotations.Tuple;
 
 import javax.lang.model.element.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 final class TupleMeta {
-    private final TypeElement classElement;
+    public final TypeElement classElement;
     public final List<FieldMeta> fields;
+    public final Map<String, IndexMeta> indexMetas;
     public final String className;
     public final String initialClassName;
     public final String spaceName;
@@ -39,7 +41,7 @@ final class TupleMeta {
         return new TupleMeta(element, fieldMetas);
     }
 
-    public TupleMeta(TypeElement classElement, List<FieldMeta> fields) {
+    private TupleMeta(TypeElement classElement, List<FieldMeta> fields) {
         this.classElement = classElement;
         this.fields = Collections.unmodifiableList(fields);
         this.initialClassName = classElement.getSimpleName().toString();
@@ -51,5 +53,31 @@ final class TupleMeta {
         if (this.spaceName.isEmpty()) {
             throw new IllegalArgumentException("Space name should not be empty");
         }
+
+        if (tupleAnnotation.indexes().length == 0) {
+            throw new IllegalArgumentException(String.format("Tuple %s must have at least one index", initialClassName));
+        }
+
+        Map<String, IndexMeta> indexMetaMap;
+
+        try {
+            indexMetaMap = Stream.of(tupleAnnotation.indexes())
+                    .map(IndexMeta::getInstance)
+                    .collect(Collectors.toMap(meta -> meta.name, Function.identity()));
+        } catch (IllegalStateException e) {
+            throw new IllegalArgumentException("Index names should be unique");
+        }
+
+        long primaryIndexes = indexMetaMap.values().stream().filter(meta -> meta.isPrimary).count();
+
+        if (primaryIndexes == 0) {
+            throw new IllegalArgumentException(String.format("Tuple %s does not have primary index", initialClassName));
+        }
+
+        if (primaryIndexes > 1) {
+            throw new IllegalArgumentException("Only one index may be primary");
+        }
+
+        this.indexMetas = Collections.unmodifiableMap(indexMetaMap);
     }
 }

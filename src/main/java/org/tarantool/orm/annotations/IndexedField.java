@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)
-public @interface Column {
-    int position() default 1;
+public @interface IndexedField {
+    IndexedFieldParams[] indexes();
 }

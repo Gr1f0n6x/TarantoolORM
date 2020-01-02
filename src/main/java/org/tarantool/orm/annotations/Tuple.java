@@ -7,4 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
-public @interface Tuple {}
+public @interface Tuple {
+    String spaceName();
+}

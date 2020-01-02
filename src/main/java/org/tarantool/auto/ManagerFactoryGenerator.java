@@ -38,7 +38,7 @@ final class ManagerFactoryGenerator {
                     .methodBuilder(methodName(meta.initialClassName))
                     .addModifiers(Modifier.PUBLIC)
                     .returns(generatedClass)
-                    .addStatement("return new $T()", generatedClass)
+                    .addStatement("return new $T(this.$N)", generatedClass, "tarantoolClient")
                     .build();
 
             methodSpecs.add(spec);

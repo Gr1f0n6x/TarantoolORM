@@ -7,5 +7,8 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)
-public @interface IndexColumn {
+public @interface IndexedFieldParams {
+    String indexName();
+    int part();
+    boolean isNullable() default false;
 }

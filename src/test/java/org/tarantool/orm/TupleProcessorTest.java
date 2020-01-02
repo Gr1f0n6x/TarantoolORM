@@ -14,8 +14,27 @@ import java.util.Arrays;
 import static com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Text.NEW_LINE;
 
 public class TupleProcessorTest {
+    private final JavaFileObject managerFactoryOutput = JavaFileObjects.forSourceString(
+            "org.tarantool.orm.generated.ManagerFactory",
+            Joiner.on(NEW_LINE).join(
+                    "package org.tarantool.orm.generated;",
+                    "",
+                    "import org.tarantool.TarantoolClient",
+                    "",
+                    "public final class ManagerFactory {",
+                    "private final TarantoolClient tarantoolClient;",
+                    "public ManagerFactory(TarantoolClient tarantoolClient) {",
+                    "this.tarantoolClient = tarantoolClient;",
+                    "}",
+                    "public DataClassManager dataClassManager() {",
+                    "return new DataClassManager(this.tarantoolClient);",
+                    "}",
+                    "}"
+            )
+    );
+
     @Test
-    public void interfaceAnnotatedByTuple() {
+    public void interfaceAnnotatedByTupleError() {
         final JavaFileObject input = JavaFileObjects.forSourceString(
                 "test.DataClass",
                 Joiner.on(NEW_LINE).join(
@@ -23,7 +42,7 @@ public class TupleProcessorTest {
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
                         "",
-                        "@Tuple",
+                        "@Tuple(spaceName = \"test\")",
                         "public interface DataClass {",
                         "}"
                 )
@@ -38,6 +57,30 @@ public class TupleProcessorTest {
     }
 
     @Test
+    public void emptySpaceNameError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "",
+                        "@Tuple(spaceName = \"\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Space name should not be empty");
+    }
+
+    @Test
     public void dataClassWithoutFieldsError() {
         final JavaFileObject input = JavaFileObjects.forSourceString(
                 "test.DataClass",
@@ -46,7 +89,7 @@ public class TupleProcessorTest {
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
                         "",
-                        "@Tuple",
+                        "@Tuple(spaceName = \"test\")",
                         "public class DataClass {",
                         "}"
                 )
@@ -69,7 +112,7 @@ public class TupleProcessorTest {
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
                         "",
-                        "@Tuple",
+                        "@Tuple(spaceName = \"test\")",
                         "class DataClass {",
                         "private int id;",
                         "}"
@@ -93,7 +136,7 @@ public class TupleProcessorTest {
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
                         "",
-                        "@Tuple",
+                        "@Tuple(spaceName = \"test\")",
                         "public abstract class DataClass {",
                         "private int id;",
                         "}"
@@ -117,7 +160,7 @@ public class TupleProcessorTest {
                         "",
                         "import org.tarantool.orm.annotations.Tuple;",
                         "",
-                        "@Tuple",
+                        "@Tuple(spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
                         "}"
@@ -130,25 +173,14 @@ public class TupleProcessorTest {
                         "package org.tarantool.orm.generated;",
                         "",
                         "",
-                        "public final class DataClassManager {",
-                        "}"
-                )
-        );
-
-        final JavaFileObject managerFactoryOutput = JavaFileObjects.forSourceString(
-                "org.tarantool.orm.generated.ManagerFactory",
-                Joiner.on(NEW_LINE).join(
-                        "package org.tarantool.orm.generated;",
-                        "",
+                        "import java.lang.String;",
                         "import org.tarantool.TarantoolClient",
-                        "",
-                        "public final class ManagerFactory {",
+                        "public final class DataClassManager {",
+                        "private final String spaceName = \"test\";",
                         "private final TarantoolClient tarantoolClient;",
-                        "public ManagerFactory(TarantoolClient tarantoolClient) {",
+                        "",
+                        "public DataClassManager(TarantoolClient tarantoolClient) {",
                         "this.tarantoolClient = tarantoolClient;",
-                        "}",
-                        "public DataClassManager dataClassManager() {",
-                        "return new DataClassManager();",
                         "}",
                         "}"
                 )

@@ -140,8 +140,13 @@ public class TupleProcessorTest {
                 Joiner.on(NEW_LINE).join(
                         "package org.tarantool.orm.generated;",
                         "",
+                        "import org.tarantool.TarantoolClient",
                         "",
                         "public final class ManagerFactory {",
+                        "private final TarantoolClient tarantoolClient;",
+                        "public ManagerFactory(TarantoolClient tarantoolClient) {",
+                        "this.tarantoolClient = tarantoolClient;",
+                        "}",
                         "public DataClassManager dataClassManager() {",
                         "return new DataClassManager();",
                         "}",

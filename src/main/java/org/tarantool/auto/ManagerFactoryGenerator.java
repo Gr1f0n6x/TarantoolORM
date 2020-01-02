@@ -1,6 +1,7 @@
 package org.tarantool.auto;
 
 import com.squareup.javapoet.*;
+import org.tarantool.TarantoolClient;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -15,7 +16,9 @@ final class ManagerFactoryGenerator {
     public void generate(Filer filer, List<TupleMeta> metas) throws IOException {
         TypeSpec managerFactory = TypeSpec.classBuilder("ManagerFactory")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addField(TarantoolClient.class, "tarantoolClient", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethods(methodSpecs(metas))
+                .addMethod(createConstructor())
                 .build();
 
         JavaFile javaFile = JavaFile.builder(Common.PACKAGE_NAME, managerFactory)
@@ -42,6 +45,17 @@ final class ManagerFactoryGenerator {
         }
 
         return methodSpecs;
+    }
+
+    private MethodSpec createConstructor() {
+        MethodSpec constructor = MethodSpec
+                .constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(TarantoolClient.class, "tarantoolClient")
+                .addStatement("this.$N = $N", "tarantoolClient", "tarantoolClient")
+                .build();
+
+        return constructor;
     }
 
     private String methodName(String className) {

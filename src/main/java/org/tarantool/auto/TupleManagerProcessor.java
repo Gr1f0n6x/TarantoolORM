@@ -43,9 +43,9 @@ public final class TupleManagerProcessor extends BaseProcessor {
                 throw new IllegalArgumentException(String.format("Only classes may be annotated by Tuple: %s", element.getSimpleName()));
             }
 
-            TupleMeta meta = TupleMeta.getInstance((TypeElement) element);
+            TupleMeta meta = TupleMeta.getInstance((TypeElement) element, typeUtils);
             info("Start to generate new class: %s", meta.className);
-            tupleManagerGenerator.generate(filer, meta);
+            tupleManagerGenerator.generate(filer, typeUtils, meta);
             metaList.add(meta);
         }
 

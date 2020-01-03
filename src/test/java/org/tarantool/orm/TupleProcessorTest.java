@@ -34,6 +34,112 @@ public class TupleProcessorTest {
     );
 
     @Test
+    public void noGetterError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "public void setId(int id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Field id in class DataClass has no getter");
+    }
+
+    @Test
+    public void incorrectGetterReturnTypeError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "public long getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Field id in class DataClass has getter with incorrect return type");
+    }
+
+    @Test
+    public void noSetterError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "public int getId() {return id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Field id in class DataClass has no setter");
+    }
+
+    @Test
+    public void incorrectSetterParameterTypeError() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(long id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Field id in class DataClass has setter with incorrect parameter type");
+    }
+
+    @Test
     public void emptyIndexNameError() {
         final JavaFileObject input = JavaFileObjects.forSourceString(
                 "test.DataClass",
@@ -46,6 +152,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"\"), spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -71,6 +179,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = {}, spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -96,6 +206,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = {@Index(name = \"primary\", isPrimary = true), @Index(name = \"primary\", isPrimary = true)}, spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -121,6 +233,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -170,6 +284,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -219,6 +335,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -244,6 +362,8 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"primary\"), spaceName = \"test\")",
                         "public abstract class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -257,7 +377,7 @@ public class TupleProcessorTest {
     }
 
     @Test
-    public void simpleTuple() {
+    public void noIndexedFieldError() {
         final JavaFileObject input = JavaFileObjects.forSourceString(
                 "test.DataClass",
                 Joiner.on(NEW_LINE).join(
@@ -269,6 +389,38 @@ public class TupleProcessorTest {
                         "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
                         "public class DataClass {",
                         "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .failsToCompile()
+                .withErrorContaining("Data class must have at least one indexed field");
+    }
+
+    @Test
+    public void simpleTuple() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.IndexedField;",
+                        "import org.tarantool.orm.annotations.IndexedFieldParams;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
                         "}"
                 )
         );
@@ -279,14 +431,40 @@ public class TupleProcessorTest {
                         "package org.tarantool.orm.generated;",
                         "",
                         "",
+                        "import java.lang.Integer;",
+                        "import java.lang.Object;",
                         "import java.lang.String;",
-                        "import org.tarantool.TarantoolClient",
+                        "import java.util.ArrayList;",
+                        "import java.util.Arrays;",
+                        "import java.util.List;",
+                        "import org.tarantool.Iterator;",
+                        "import org.tarantool.TarantoolClient;",
+                        "import test.DataClass;",
                         "public final class DataClassManager {",
                         "private final String spaceName = \"test\";",
                         "private final TarantoolClient tarantoolClient;",
                         "",
                         "public DataClassManager(TarantoolClient tarantoolClient) {",
                         "this.tarantoolClient = tarantoolClient;",
+                        "}",
+                        "private List<?> toList(final DataClass value) {",
+                        "List<Object> result = new ArrayList<>();",
+                        "result.add(value.getId());",
+                        "return result;",
+                        "}",
+                        "private DataClass fromList(final List<?> values) {",
+                        "DataClass result = new DataClass();",
+                        "result.setId((Integer) values.get(0));",
+                        "return result;",
+                        "}",
+                        "public DataClass selectUsingPrimaryIndexSync(final int id) {",
+                        "List<?> keys = Arrays.asList(id);",
+                        "List<?> result = this.tarantoolClient.syncOps().select(\"test\", \"primary\", keys, 0, 1, Iterator.EQ);",
+                        "if (result.size() == 1) {",
+                        "return fromList((List<?>) result.get(0));",
+                        " } else {",
+                        "return null;",
+                        "}",
                         "}",
                         "}"
                 )

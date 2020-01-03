@@ -2,10 +2,14 @@ package org.tarantool.auto;
 
 import com.google.common.collect.Sets;
 import com.squareup.javapoet.*;
+import org.tarantool.Iterator;
 import org.tarantool.TarantoolClient;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
@@ -15,7 +19,7 @@ final class TupleManagerGenerator {
     public TupleManagerGenerator() {
     }
 
-    public void generate(Filer filer, TupleMeta tupleMeta) throws IOException {
+    public void generate(Filer filer, Types typeUtil, TupleMeta tupleMeta) throws IOException {
         Map<String, List<IndexFieldMeta>> indexedFields = getIndexedFields(tupleMeta.fields);
 
         TypeSpec newClass = TypeSpec.classBuilder(tupleMeta.className)
@@ -24,7 +28,7 @@ final class TupleManagerGenerator {
                 .addField(TarantoolClient.class, "tarantoolClient", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethod(createConstructor())
                 .addMethod(getDataClassToListMethod(tupleMeta))
-                .addMethod(getListToDataClassMethod(tupleMeta))
+                .addMethod(getListToDataClassMethod(tupleMeta, typeUtil))
                 .addMethods(generateSelectMethods(indexedFields, tupleMeta))
                 .build();
 
@@ -50,7 +54,7 @@ final class TupleManagerGenerator {
                 .build();
     }
 
-    private MethodSpec getListToDataClassMethod(TupleMeta tupleMeta) {
+    private MethodSpec getListToDataClassMethod(TupleMeta tupleMeta, Types typeUtil) {
         TypeName dataClassType = TypeName.get(tupleMeta.classElement.asType());
 
         MethodSpec.Builder builder = MethodSpec.methodBuilder("fromList")
@@ -72,7 +76,12 @@ final class TupleManagerGenerator {
         int index = 0;
 
         for (FieldMeta fieldMeta : sortedFieldList) {
-            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.tupleField.asType(), index);
+            TypeMirror valueType = fieldMeta.tupleField.asType();
+            if (fieldMeta.tupleField.asType().getKind().isPrimitive()) {
+                valueType = typeUtil.boxedClass((PrimitiveType) fieldMeta.tupleField.asType()).asType();
+            }
+
+            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, valueType, index);
             index++;
         }
 
@@ -86,6 +95,7 @@ final class TupleManagerGenerator {
         ParameterizedTypeName wildCardList = ParameterizedTypeName.get(list, WildcardTypeName.subtypeOf(Object.class));
         ClassName arrayList = ClassName.get("java.util", "ArrayList");
         TypeName dataClassType = TypeName.get(tupleMeta.classElement.asType());
+        ParameterizedTypeName listOfObjects = ParameterizedTypeName.get(list, ClassName.OBJECT);
 
         MethodSpec.Builder builder = MethodSpec.methodBuilder("toList")
                 .addModifiers(Modifier.PRIVATE)
@@ -98,7 +108,7 @@ final class TupleManagerGenerator {
                 .sorted(Comparator.comparingInt(meta -> meta.position))
                 .collect(Collectors.toList());
 
-        builder.addStatement("$T result = new $T<>()", wildCardList, arrayList);
+        builder.addStatement("$T result = new $T<>()", listOfObjects, arrayList);
 
         for (FieldMeta fieldMeta : sortedFieldList) {
             builder.addStatement("result.add(value.$L())", fieldMeta.getterName);
@@ -173,8 +183,12 @@ final class TupleManagerGenerator {
 
         String arguments = indexFieldMetas.stream().map(meta -> meta.tupleField.getSimpleName().toString()).collect(Collectors.joining(", "));
         builder.addStatement("$T keys = $T.asList($L)", wildCardList, Arrays.class, arguments);
-        builder.addStatement("$T result = this.$N.syncOps().select($S, $S, keys, $L, $L)", wildCardList, "tarantoolClient", tupleMeta.spaceName, indexMeta.name, 0, 1);
-        builder.addStatement("return fromList(result)");
+        builder.addStatement("$T result = this.$N.syncOps().select($S, $S, keys, $L, $L, $T.EQ)", wildCardList, "tarantoolClient", tupleMeta.spaceName, indexMeta.name, 0, 1, Iterator.class);
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
 
         return builder.build();
     }

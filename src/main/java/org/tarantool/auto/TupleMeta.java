@@ -5,6 +5,7 @@ import org.tarantool.orm.annotations.Tuple;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.util.Types;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -18,9 +19,9 @@ final class TupleMeta {
     public final String initialClassName;
     public final String spaceName;
 
-    public static TupleMeta getInstance(TypeElement element) {
+    public static TupleMeta getInstance(TypeElement element, Types typeUtil) {
         isClassValid(element);
-        List<FieldMeta> fieldMetas = getFieldMetas(element);
+        List<FieldMeta> fieldMetas = getFieldMetas(element, typeUtil);
 
         return new TupleMeta(element, fieldMetas);
     }
@@ -35,7 +36,7 @@ final class TupleMeta {
         }
     }
 
-    private static List<FieldMeta> getFieldMetas(TypeElement element) {
+    private static List<FieldMeta> getFieldMetas(TypeElement element, Types typeUtil) {
         Map<String, ExecutableElement> executableElementMap = getMethodsMap(element);
         List<FieldMeta> fieldMetas = new ArrayList<>();
 
@@ -68,7 +69,7 @@ final class TupleMeta {
                     throw new IllegalArgumentException(String.format("Field %s in class %s has getter with incorrect return type", fieldName, element.getSimpleName()));
                 }
 
-                if (setter.getParameters().size() != 1 || setter.getParameters().contains(field)) {
+                if (setter.getParameters().size() != 1 || !typeUtil.isSameType(setter.getParameters().get(0).asType(), field.asType())) {
                     throw new IllegalArgumentException(String.format("Field %s in class %s has setter with incorrect parameter type", fieldName, element.getSimpleName()));
                 }
 

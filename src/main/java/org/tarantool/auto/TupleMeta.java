@@ -4,6 +4,7 @@ package org.tarantool.auto;
 import org.tarantool.orm.annotations.Tuple;
 
 import javax.lang.model.element.*;
+import javax.lang.model.type.TypeKind;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -18,8 +19,13 @@ final class TupleMeta {
     public final String spaceName;
 
     public static TupleMeta getInstance(TypeElement element) {
-        List<FieldMeta> fieldMetas = new ArrayList<>();
+        isClassValid(element);
+        List<FieldMeta> fieldMetas = getFieldMetas(element);
 
+        return new TupleMeta(element, fieldMetas);
+    }
+
+    private static void isClassValid(TypeElement element) {
         if (!element.getModifiers().contains(Modifier.PUBLIC)) {
             throw new IllegalArgumentException(String.format("Class %s should be public", element.getSimpleName()));
         }
@@ -27,10 +33,46 @@ final class TupleMeta {
         if (element.getModifiers().contains(Modifier.ABSTRACT)) {
             throw new IllegalArgumentException(String.format("Class %s should not be abstract", element.getSimpleName()));
         }
+    }
+
+    private static List<FieldMeta> getFieldMetas(TypeElement element) {
+        Map<String, ExecutableElement> executableElementMap = getMethodsMap(element);
+        List<FieldMeta> fieldMetas = new ArrayList<>();
 
         for (Element el : element.getEnclosedElements()) {
             if (el.getKind() == ElementKind.FIELD) {
-                fieldMetas.add(FieldMeta.getInstance((VariableElement) el));
+                VariableElement field = (VariableElement) el;
+                TypeKind fieldKind = el.asType().getKind();
+                ExecutableElement getter;
+                ExecutableElement setter;
+
+                String fieldName = el.getSimpleName().toString();
+                String capitalizedFieldName = Common.capitalize(fieldName);
+
+                if (fieldKind == TypeKind.BOOLEAN) {
+                    getter = executableElementMap.get("is" + capitalizedFieldName);
+                } else {
+                    getter = executableElementMap.get("get" + capitalizedFieldName);
+                }
+                setter = executableElementMap.get("set" + capitalizedFieldName);
+
+                if (getter == null) {
+                    throw new IllegalArgumentException(String.format("Field %s in class %s has no getter", fieldName, element.getSimpleName()));
+                }
+
+                if (setter == null) {
+                    throw new IllegalArgumentException(String.format("Field %s in class %s has no setter", fieldName, element.getSimpleName()));
+                }
+
+                if (getter.getReturnType() != field) {
+                    throw new IllegalArgumentException(String.format("Field %s in class %s has getter with incorrect return type", fieldName, element.getSimpleName()));
+                }
+
+                if (setter.getParameters().size() != 1 || setter.getParameters().contains(field)) {
+                    throw new IllegalArgumentException(String.format("Field %s in class %s has setter with incorrect parameter type", fieldName, element.getSimpleName()));
+                }
+
+                fieldMetas.add(FieldMeta.getInstance(field, getter, setter));
             }
         }
 
@@ -38,7 +80,20 @@ final class TupleMeta {
             throw new IllegalArgumentException(String.format("Class %s has no fields", element.getSimpleName()));
         }
 
-        return new TupleMeta(element, fieldMetas);
+        return fieldMetas;
+    }
+
+    private static Map<String, ExecutableElement> getMethodsMap(TypeElement element) {
+        Map<String, ExecutableElement> executableElementMap = new HashMap<>();
+
+        for (Element el : element.getEnclosedElements()) {
+            if (el.getKind() == ElementKind.METHOD) {
+                ExecutableElement executableElement = (ExecutableElement) el;
+                executableElementMap.put(executableElement.getSimpleName().toString(), executableElement);
+            }
+        }
+
+        return executableElementMap;
     }
 
     private TupleMeta(TypeElement classElement, List<FieldMeta> fields) {

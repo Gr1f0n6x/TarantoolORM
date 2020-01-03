@@ -27,7 +27,7 @@ public final class TupleManagerProcessor extends BaseProcessor {
             info("Generate manager factory");
             generateTupleManagerFactory(metas);
         } catch (IllegalArgumentException | IOException e) {
-            error("Some error: %s", e.getLocalizedMessage());
+            error(e.getLocalizedMessage());
             return true;
         }
 

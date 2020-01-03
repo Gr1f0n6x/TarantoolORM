@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 public @interface IndexedFieldParams {
     String indexName();
-    int part();
+    int part() default 1;
     boolean isNullable() default false;
 }

@@ -64,7 +64,7 @@ final class TupleMeta {
                     throw new IllegalArgumentException(String.format("Field %s in class %s has no setter", fieldName, element.getSimpleName()));
                 }
 
-                if (getter.getReturnType() != field) {
+                if (getter.getReturnType() != field.asType()) {
                     throw new IllegalArgumentException(String.format("Field %s in class %s has getter with incorrect return type", fieldName, element.getSimpleName()));
                 }
 

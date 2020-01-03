@@ -72,7 +72,7 @@ final class TupleManagerGenerator {
         int index = 0;
 
         for (FieldMeta fieldMeta : sortedFieldList) {
-            builder.addStatement("result.$L(values.get(($T) $L))", fieldMeta.setterName, fieldMeta.tupleField, index);
+            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.tupleField.asType(), index);
             index++;
         }
 
@@ -101,7 +101,7 @@ final class TupleManagerGenerator {
         builder.addStatement("$T result = new $T<>()", wildCardList, arrayList);
 
         for (FieldMeta fieldMeta : sortedFieldList) {
-            builder.addStatement("result.add(value.$L())", fieldMeta.getterName, fieldMeta.tupleField);
+            builder.addStatement("result.add(value.$L())", fieldMeta.getterName);
         }
 
         builder.addStatement("return result");

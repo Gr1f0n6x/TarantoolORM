@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 final class TupleManagerGenerator {
     private final ClassName list = ClassName.get("java.util", "List");
     private final ParameterizedTypeName wildCardList = ParameterizedTypeName.get(list, WildcardTypeName.subtypeOf(Object.class));
+    private final ParameterizedTypeName listOfObjects = ParameterizedTypeName.get(list, ClassName.OBJECT);
+    private final ClassName arrayList = ClassName.get("java.util", "ArrayList");
 
     public TupleManagerGenerator() {
     }
@@ -30,6 +32,8 @@ final class TupleManagerGenerator {
                 .addMethod(generateListToDataClassMethod(tupleMeta, typeUtil))
                 .addMethods(generateSelectMethods(tupleMeta))
                 .addMethod(generateInsertMethod(tupleMeta))
+                .addMethod(generateDeleteMethod(tupleMeta))
+                .addMethod(generateReplaceMethod(tupleMeta))
                 .build();
 
         JavaFile javaFile = JavaFile.builder(Common.PACKAGE_NAME, newClass)
@@ -89,11 +93,6 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateDataClassToListMethod(TupleMeta tupleMeta) {
-        ClassName list = ClassName.get("java.util", "List");
-        ParameterizedTypeName wildCardList = ParameterizedTypeName.get(list, WildcardTypeName.subtypeOf(Object.class));
-        ClassName arrayList = ClassName.get("java.util", "ArrayList");
-        ParameterizedTypeName listOfObjects = ParameterizedTypeName.get(list, ClassName.OBJECT);
-
         MethodSpec.Builder builder = MethodSpec.methodBuilder("toList")
                 .addModifiers(Modifier.PRIVATE)
                 .returns(wildCardList);
@@ -124,6 +123,47 @@ final class TupleManagerGenerator {
 
         builder.addStatement("$T values = toList(value)", wildCardList);
         builder.addStatement("$T result = this.$N.syncOps().insert($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
+
+        return builder.build();
+    }
+
+    private MethodSpec generateReplaceMethod(TupleMeta tupleMeta) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("replaceSync")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
+                .returns(tupleMeta.classType);
+
+        builder.addStatement("$T values = toList(value)", wildCardList);
+        builder.addStatement("$T result = this.$N.syncOps().replace($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
+
+        return builder.build();
+    }
+
+    private MethodSpec generateDeleteMethod(TupleMeta tupleMeta) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("deleteSync")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
+                .returns(tupleMeta.classType);
+
+        List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
+
+        builder.addStatement("$T keys = new $T<>()", listOfObjects, arrayList);
+
+        for (IndexFieldMeta indexFieldMeta : indexFieldMetas) {
+            builder.addStatement("keys.add(value.$L())", indexFieldMeta.getterName);
+        }
+
+        builder.addStatement("$T result = this.$N.syncOps().delete($S, keys)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
         builder.beginControlFlow("if (result.size() == 1)");
         builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
         builder.nextControlFlow("else");

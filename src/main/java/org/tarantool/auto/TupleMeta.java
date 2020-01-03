@@ -1,6 +1,8 @@
 package org.tarantool.auto;
 
 
+import com.google.common.collect.Sets;
+import com.squareup.javapoet.TypeName;
 import org.tarantool.orm.annotations.Tuple;
 
 import javax.lang.model.element.*;
@@ -13,7 +15,10 @@ import java.util.stream.Stream;
 
 final class TupleMeta {
     public final TypeElement classElement;
+    public final TypeName classType;
     public final List<FieldMeta> fields;
+    public final Map<String, List<IndexFieldMeta>> indexedFields;
+    public final String primaryIndexName;
     public final Map<String, IndexMeta> indexMetas;
     public final String className;
     public final String initialClassName;
@@ -22,8 +27,9 @@ final class TupleMeta {
     public static TupleMeta getInstance(TypeElement element, Types typeUtil) {
         isClassValid(element);
         List<FieldMeta> fieldMetas = getFieldMetas(element, typeUtil);
+        Map<String, List<IndexFieldMeta>> indexedFields = getIndexedFields(fieldMetas);
 
-        return new TupleMeta(element, fieldMetas);
+        return new TupleMeta(element, fieldMetas, indexedFields);
     }
 
     private static void isClassValid(TypeElement element) {
@@ -84,6 +90,26 @@ final class TupleMeta {
         return fieldMetas;
     }
 
+    private static Map<String, List<IndexFieldMeta>> getIndexedFields(List<FieldMeta> fieldMetas) {
+        List<FieldMeta> indexedFields = fieldMetas
+                .stream()
+                .filter(field -> field.isIndexed)
+                .collect(Collectors.toList());
+
+        if (indexedFields.isEmpty()) {
+            throw new IllegalArgumentException("Data class must have at least one indexed field");
+        }
+
+        return indexedFields
+                .stream()
+                .flatMap(field -> field.indexFieldMetas.stream())
+                .sorted(Comparator.comparingInt(value -> value.part))
+                .collect(Collectors.groupingBy(
+                        indexFieldMeta -> indexFieldMeta.indexName,
+                        Collectors.mapping(Function.identity(), Collectors.toList())
+                ));
+    }
+
     private static Map<String, ExecutableElement> getMethodsMap(TypeElement element) {
         Map<String, ExecutableElement> executableElementMap = new HashMap<>();
 
@@ -97,11 +123,13 @@ final class TupleMeta {
         return executableElementMap;
     }
 
-    private TupleMeta(TypeElement classElement, List<FieldMeta> fields) {
+    private TupleMeta(TypeElement classElement, List<FieldMeta> fields, Map<String, List<IndexFieldMeta>> indexedFields) {
         this.classElement = classElement;
         this.fields = Collections.unmodifiableList(fields);
         this.initialClassName = classElement.getSimpleName().toString();
         this.className = classElement.getSimpleName().toString() + "Manager";
+        this.classType = TypeName.get(classElement.asType());
+        this.indexedFields = Collections.unmodifiableMap(indexedFields);
 
         Tuple tupleAnnotation = classElement.getAnnotation(Tuple.class);
         this.spaceName = tupleAnnotation.spaceName();
@@ -134,6 +162,18 @@ final class TupleMeta {
             throw new IllegalArgumentException("Only one index may be primary");
         }
 
+        //noinspection OptionalGetWithoutIsPresent
+        this.primaryIndexName = indexMetaMap.values().stream().filter(meta -> meta.isPrimary).findFirst().get().name;
+
         this.indexMetas = Collections.unmodifiableMap(indexMetaMap);
+
+        Sets.SetView<String> difference = Sets.symmetricDifference(
+                indexMetas.keySet(),
+                indexedFields.keySet()
+        );
+
+        if (!difference.isEmpty()) {
+            throw new IllegalArgumentException("Name of indexes in @IndexedField and in @Index must correspond to each other");
+        }
     }
 }

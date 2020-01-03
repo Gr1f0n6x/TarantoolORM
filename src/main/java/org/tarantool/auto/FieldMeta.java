@@ -1,5 +1,6 @@
 package org.tarantool.auto;
 
+import com.squareup.javapoet.TypeName;
 import org.tarantool.orm.annotations.Field;
 import org.tarantool.orm.annotations.IndexedField;
 import org.tarantool.orm.annotations.IndexedFieldParams;
@@ -11,7 +12,8 @@ import java.util.Collections;
 import java.util.List;
 
 final class FieldMeta {
-    public final VariableElement tupleField;
+    public final VariableElement field;
+    public final TypeName fieldType;
     public final ExecutableElement getter;
     public final String getterName;
     public final ExecutableElement setter;
@@ -26,8 +28,9 @@ final class FieldMeta {
     }
 
     private FieldMeta(VariableElement variableElement, ExecutableElement getter, ExecutableElement setter) {
-        this.tupleField = variableElement;
+        this.field = variableElement;
         this.fieldName = variableElement.getSimpleName().toString();
+        this.fieldType = TypeName.get(variableElement.asType());
         this.getter = getter;
         this.getterName = getter.getSimpleName().toString();
         this.setter = setter;
@@ -46,7 +49,7 @@ final class FieldMeta {
 
             List<IndexFieldMeta> indexFieldMetas = new ArrayList<>();
             for (IndexedFieldParams params : indexField.indexes()) {
-                indexFieldMetas.add(IndexFieldMeta.getInstance(variableElement, params.indexName(), params.part(), params.isNullable()));
+                indexFieldMetas.add(IndexFieldMeta.getInstance(variableElement, getter, setter, params.indexName(), params.part(), params.isNullable()));
             }
 
             this.indexFieldMetas = Collections.unmodifiableList(indexFieldMetas);

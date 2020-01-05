@@ -27,6 +27,7 @@ final class TupleManagerGenerator {
                 .addMethod(generateConstructor())
                 .addMethod(generateDataClassToListMethod(tupleMeta))
                 .addMethod(generateListToDataClassMethod(tupleMeta))
+                .addMethod(generateResultToDataClassMethod(tupleMeta))
                 .addMethods(generateSelectMethods(tupleMeta))
                 .addMethod(generateInsertMethod(tupleMeta))
                 .addMethod(generateDeleteMethod(tupleMeta))
@@ -91,6 +92,21 @@ final class TupleManagerGenerator {
         return builder.build();
     }
 
+    private MethodSpec generateResultToDataClassMethod(TupleMeta tupleMeta) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("resultToDataClass")
+                .addModifiers(Modifier.PRIVATE)
+                .addParameter(wildCardList, "result", Modifier.FINAL)
+                .returns(tupleMeta.classType);
+
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
+
+        return builder.build();
+    }
+
     private MethodSpec generateUpdateMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("updateSync")
                 .addModifiers(Modifier.PUBLIC)
@@ -117,11 +133,7 @@ final class TupleManagerGenerator {
                 );
 
         builder.addStatement("$T result = this.$N.syncOps().update($S, keys, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }
@@ -154,11 +166,7 @@ final class TupleManagerGenerator {
                 );
 
         builder.addStatement("$T result = this.$N.syncOps().upsert($S, keys, values, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }
@@ -171,11 +179,7 @@ final class TupleManagerGenerator {
 
         builder.addStatement("$T values = toList(value)", wildCardList);
         builder.addStatement("$T result = this.$N.syncOps().insert($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }
@@ -188,11 +192,7 @@ final class TupleManagerGenerator {
 
         builder.addStatement("$T values = toList(value)", wildCardList);
         builder.addStatement("$T result = this.$N.syncOps().replace($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }
@@ -212,11 +212,7 @@ final class TupleManagerGenerator {
         }
 
         builder.addStatement("$T result = this.$N.syncOps().delete($S, keys)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }
@@ -258,11 +254,7 @@ final class TupleManagerGenerator {
         String arguments = indexFieldMetas.stream().map(meta -> meta.indexField.getSimpleName().toString()).collect(Collectors.joining(", "));
         builder.addStatement("$T keys = $T.asList($L)", wildCardList, Arrays.class, arguments);
         builder.addStatement("$T result = this.$N.syncOps().select($S, $S, keys, $L, $L, $T.EQ)", wildCardList, "tarantoolClient", tupleMeta.spaceName, indexMeta.name, 0, 1, Iterator.class);
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
+        builder.addStatement("return resultToDataClass(result)");
 
         return builder.build();
     }

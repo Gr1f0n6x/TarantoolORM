@@ -436,7 +436,7 @@ public class TupleProcessorTest {
                 Joiner.on(NEW_LINE).join(
                         "package org.tarantool.orm.generated;",
 
-        "import java.lang.Integer;",
+        "import java.lang.Number;",
         "import java.lang.Object;",
         "import java.lang.String;",
         "import java.util.ArrayList;",
@@ -510,8 +510,8 @@ public class TupleProcessorTest {
 
                 "public DataClass fromList(final List<?> values) {",
                     "DataClass result = new DataClass();",
-                    "result.setId((Integer) values.get(0));",
-                    "result.setValue((Integer) values.get(1));",
+                    "result.setId(((Number) values.get(0)).intValue());",
+                    "result.setValue(((Number) values.get(1)).intValue());",
                     "return result;",
                 "}",
             "}",
@@ -560,7 +560,7 @@ public class TupleProcessorTest {
 
                         "package org.tarantool.orm.generated;",
 
-                    "import java.lang.Integer;",
+                    "import java.lang.Number;",
                     "import java.lang.Object;",
                     "import java.lang.String;",
                     "import java.util.ArrayList;",
@@ -639,7 +639,7 @@ public class TupleProcessorTest {
 
                 "public DataClass fromList(final List<?> values) {",
                     "DataClass result = new DataClass();",
-                    "result.setId((Integer) values.get(0));",
+                    "result.setId(((Number) values.get(0)).intValue());",
                     "result.setValue((String) values.get(1));",
                     "return result;",
                 "}",
@@ -690,21 +690,21 @@ public class TupleProcessorTest {
 
                         "package org.tarantool.orm.generated;",
 
-"import java.lang.Integer;",
-"import java.lang.Object;",
-"import java.lang.String;",
-"import java.util.ArrayList;",
-"import java.util.Arrays;",
-"import java.util.List;",
-"import org.tarantool.TarantoolClient;",
-"import org.tarantool.orm.internals.Meta;",
-"import org.tarantool.orm.internals.operations.DeleteOperation;",
-"import org.tarantool.orm.internals.operations.InsertOperation;",
-"import org.tarantool.orm.internals.operations.ReplaceOperation;",
-"import org.tarantool.orm.internals.operations.SelectOperation;",
-"import org.tarantool.orm.internals.operations.UpdateOperation;",
-"import org.tarantool.orm.internals.operations.UpsertOperation;",
-"import test.DataClass;",
+                    "import java.lang.Number;",
+                    "import java.lang.Object;",
+                    "import java.lang.String;",
+                    "import java.util.ArrayList;",
+                    "import java.util.Arrays;",
+                    "import java.util.List;",
+                    "import org.tarantool.TarantoolClient;",
+                    "import org.tarantool.orm.internals.Meta;",
+                    "import org.tarantool.orm.internals.operations.DeleteOperation;",
+                    "import org.tarantool.orm.internals.operations.InsertOperation;",
+                    "import org.tarantool.orm.internals.operations.ReplaceOperation;",
+                    "import org.tarantool.orm.internals.operations.SelectOperation;",
+                    "import org.tarantool.orm.internals.operations.UpdateOperation;",
+                    "import org.tarantool.orm.internals.operations.UpsertOperation;",
+                    "import test.DataClass;",
 
         "public final class DataClassManager {",
             "private final String spaceName = \"test\";",
@@ -765,7 +765,7 @@ public class TupleProcessorTest {
                 "public DataClass fromList(final List<?> values) {",
                     "DataClass result = new DataClass();",
                     "result.setValue((String) values.get(0));",
-                    "result.setId((Integer) values.get(1));",
+                    "result.setId(((Number) values.get(1)).intValue());",
                     "return result;",
                 "}",
             "}",
@@ -813,7 +813,7 @@ public class TupleProcessorTest {
                 Joiner.on(NEW_LINE).join(
                         "package org.tarantool.orm.generated;",
 
-                        "import java.lang.Integer;",
+                        "import java.lang.Number;",
                         "import java.lang.Object;",
                         "import java.lang.String;",
                         "import java.util.ArrayList;",
@@ -893,7 +893,7 @@ public class TupleProcessorTest {
 
                 "public DataClass fromList(final List<?> values) {",
                     "DataClass result = new DataClass();",
-                    "result.setId((Integer) values.get(0));",
+                     "result.setId(((Number) values.get(0)).intValue());",
                     "result.setValue((String) values.get(1));",
                     "return result;",
                 "}",

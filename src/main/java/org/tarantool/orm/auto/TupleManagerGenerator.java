@@ -77,7 +77,12 @@ final class TupleManagerGenerator {
                 .addStatement("$T result = new $T()", tupleMeta.classType, tupleMeta.classType);
 
         for (FieldMeta fieldMeta : tupleMeta.fields) {
-            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.valueType, fieldMeta.getIndex());
+            if (Common.isNumber(fieldMeta.field.asType().getKind())) {
+                String toValue = fieldMeta.field.asType().getKind().name().toLowerCase() + "Value()";
+                builder.addStatement("result.$L((($T) values.get($L)).$L)", fieldMeta.setterName, Number.class, fieldMeta.getIndex(), toValue);
+            } else {
+                builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.valueType, fieldMeta.getIndex());
+            }
         }
 
         builder.addStatement("return result");

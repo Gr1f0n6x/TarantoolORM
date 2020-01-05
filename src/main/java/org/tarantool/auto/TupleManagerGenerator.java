@@ -6,9 +6,6 @@ import org.tarantool.TarantoolClient;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.type.PrimitiveType;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,18 +19,20 @@ final class TupleManagerGenerator {
     public TupleManagerGenerator() {
     }
 
-    public void generate(Filer filer, Types typeUtil, TupleMeta tupleMeta) throws IOException {
+    public void generate(Filer filer, TupleMeta tupleMeta) throws IOException {
         TypeSpec newClass = TypeSpec.classBuilder(tupleMeta.className)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addField(spaceName(tupleMeta.spaceName))
                 .addField(TarantoolClient.class, "tarantoolClient", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethod(generateConstructor())
                 .addMethod(generateDataClassToListMethod(tupleMeta))
-                .addMethod(generateListToDataClassMethod(tupleMeta, typeUtil))
+                .addMethod(generateListToDataClassMethod(tupleMeta))
                 .addMethods(generateSelectMethods(tupleMeta))
                 .addMethod(generateInsertMethod(tupleMeta))
                 .addMethod(generateDeleteMethod(tupleMeta))
                 .addMethod(generateReplaceMethod(tupleMeta))
+                .addMethod(generateUpdateMethod(tupleMeta))
+                .addMethod(generateUpsertMethod(tupleMeta))
                 .build();
 
         JavaFile javaFile = JavaFile.builder(Common.PACKAGE_NAME, newClass)
@@ -58,33 +57,15 @@ final class TupleManagerGenerator {
                 .build();
     }
 
-    private MethodSpec generateListToDataClassMethod(TupleMeta tupleMeta, Types typeUtil) {
+    private MethodSpec generateListToDataClassMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("fromList")
                 .addModifiers(Modifier.PRIVATE)
-                .returns(tupleMeta.classType);
+                .addParameter(wildCardList, "values", Modifier.FINAL)
+                .returns(tupleMeta.classType)
+                .addStatement("$T result = new $T()", tupleMeta.classType, tupleMeta.classType);
 
-        ClassName list = ClassName.get("java.util", "List");
-        ParameterizedTypeName wildCardList = ParameterizedTypeName.get(list, WildcardTypeName.subtypeOf(Object.class));
-
-        builder.addParameter(wildCardList, "values", Modifier.FINAL);
-
-        List<FieldMeta> sortedFieldList = tupleMeta.fields
-                .stream()
-                .sorted(Comparator.comparingInt(meta -> meta.position))
-                .collect(Collectors.toList());
-
-        builder.addStatement("$T result = new $T()", tupleMeta.classType, tupleMeta.classType);
-
-        int index = 0;
-
-        for (FieldMeta fieldMeta : sortedFieldList) {
-            TypeMirror valueType = fieldMeta.field.asType();
-            if (fieldMeta.field.asType().getKind().isPrimitive()) {
-                valueType = typeUtil.boxedClass((PrimitiveType) fieldMeta.field.asType()).asType();
-            }
-
-            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, valueType, index);
-            index++;
+        for (FieldMeta fieldMeta : tupleMeta.fields) {
+            builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.valueType, fieldMeta.getIndex());
         }
 
         builder.addStatement("return result");
@@ -99,18 +80,85 @@ final class TupleManagerGenerator {
 
         builder.addParameter(tupleMeta.classType, "value", Modifier.FINAL);
 
-        List<FieldMeta> sortedFieldList = tupleMeta.fields
-                .stream()
-                .sorted(Comparator.comparingInt(meta -> meta.position))
-                .collect(Collectors.toList());
-
         builder.addStatement("$T result = new $T<>()", listOfObjects, arrayList);
 
-        for (FieldMeta fieldMeta : sortedFieldList) {
+        for (FieldMeta fieldMeta : tupleMeta.fields) {
             builder.addStatement("result.add(value.$L())", fieldMeta.getterName);
         }
 
         builder.addStatement("return result");
+
+        return builder.build();
+    }
+
+    private MethodSpec generateUpdateMethod(TupleMeta tupleMeta) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("updateSync")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
+                .returns(tupleMeta.classType);
+
+        List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
+
+        builder.addStatement("$T keys = new $T<>()", listOfObjects, arrayList);
+
+        for (IndexFieldMeta indexFieldMeta : indexFieldMetas) {
+            builder.addStatement("keys.add(value.$L())", indexFieldMeta.getterName);
+        }
+
+        builder.addStatement("$T<$T> ops = new $T<>()", list, wildCardList, arrayList);
+        // filter fields which are used as primary index because we can't update them
+        tupleMeta.fields
+                .stream()
+                .filter(fieldMeta -> fieldMeta.indexFieldMetas
+                        .stream()
+                        .noneMatch(indexFieldMeta -> indexFieldMeta.indexName.equals(tupleMeta.primaryIndexName)))
+                .forEach(fieldMeta ->
+                        builder.addStatement("ops.add($T.asList($S, $L, value.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
+                );
+
+        builder.addStatement("$T result = this.$N.syncOps().update($S, keys, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
+
+        return builder.build();
+    }
+
+    private MethodSpec generateUpsertMethod(TupleMeta tupleMeta) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("upsertSync")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(tupleMeta.classType, "defaultValue", Modifier.FINAL)
+                .addParameter(tupleMeta.classType, "updatedValue", Modifier.FINAL)
+                .returns(tupleMeta.classType);
+
+        List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
+
+        builder.addStatement("$T keys = new $T<>()", listOfObjects, arrayList);
+
+        for (IndexFieldMeta indexFieldMeta : indexFieldMetas) {
+            builder.addStatement("keys.add(defaultValue.$L())", indexFieldMeta.getterName);
+        }
+
+        builder.addStatement("$T values = toList(defaultValue)", wildCardList);
+        builder.addStatement("$T<$T> ops = new $T<>()", list, wildCardList, arrayList);
+        // filter fields which are used as primary index because we can't update them
+        tupleMeta.fields
+                .stream()
+                .filter(fieldMeta -> fieldMeta.indexFieldMetas
+                        .stream()
+                        .noneMatch(indexFieldMeta -> indexFieldMeta.indexName.equals(tupleMeta.primaryIndexName)))
+                .forEach(fieldMeta ->
+                        builder.addStatement("ops.add($T.asList($S, $L, updatedValue.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
+                );
+
+        builder.addStatement("$T result = this.$N.syncOps().upsert($S, keys, values, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
+        builder.beginControlFlow("if (result.size() == 1)");
+        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
+        builder.nextControlFlow("else");
+        builder.addStatement("return null");
+        builder.endControlFlow();
 
         return builder.build();
     }

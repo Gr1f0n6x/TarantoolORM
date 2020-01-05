@@ -79,7 +79,7 @@ final class TupleMeta {
                     throw new IllegalArgumentException(String.format("Field %s in class %s has setter with incorrect parameter type", fieldName, element.getSimpleName()));
                 }
 
-                fieldMetas.add(FieldMeta.getInstance(field, getter, setter));
+                fieldMetas.add(FieldMeta.getInstance(field, getter, setter, typeUtil));
             }
         }
 
@@ -87,7 +87,17 @@ final class TupleMeta {
             throw new IllegalArgumentException(String.format("Class %s has no fields", element.getSimpleName()));
         }
 
-        return fieldMetas;
+        List<FieldMeta> sortedFieldList = fieldMetas
+                .stream()
+                .sorted(Comparator.comparingInt(meta -> meta.position))
+                .collect(Collectors.toList());
+
+        int index = 1;
+        for (FieldMeta meta : sortedFieldList) {
+            meta.setRealPosition(index++);
+        }
+
+        return sortedFieldList;
     }
 
     private static Map<String, List<IndexFieldMeta>> getIndexedFields(List<FieldMeta> fieldMetas) {

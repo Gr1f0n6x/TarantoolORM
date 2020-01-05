@@ -7,6 +7,9 @@ import org.tarantool.orm.annotations.IndexedFieldParams;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,15 +22,19 @@ final class FieldMeta {
     public final ExecutableElement setter;
     public final String setterName;
     public final String fieldName;
+    // position is the index of field specified by user, so it may be not unique. Represents a desired field position
     public final int position;
     public final boolean isIndexed;
     public final List<IndexFieldMeta> indexFieldMetas;
+    public final TypeMirror valueType;
+    // index is used in update and upsert operation and represents the real field position
+    private int realPosition;
 
-    public static FieldMeta getInstance(VariableElement element, ExecutableElement getter, ExecutableElement setter) {
-        return new FieldMeta(element, getter, setter);
+    public static FieldMeta getInstance(VariableElement element, ExecutableElement getter, ExecutableElement setter, Types typeUtil) {
+        return new FieldMeta(element, getter, setter, typeUtil);
     }
 
-    private FieldMeta(VariableElement variableElement, ExecutableElement getter, ExecutableElement setter) {
+    private FieldMeta(VariableElement variableElement, ExecutableElement getter, ExecutableElement setter, Types typeUtil) {
         this.field = variableElement;
         this.fieldName = variableElement.getSimpleName().toString();
         this.fieldType = TypeName.get(variableElement.asType());
@@ -35,6 +42,13 @@ final class FieldMeta {
         this.getterName = getter.getSimpleName().toString();
         this.setter = setter;
         this.setterName = setter.getSimpleName().toString();
+
+        TypeMirror valueType = variableElement.asType();
+        if (variableElement.asType().getKind().isPrimitive()) {
+            valueType = typeUtil.boxedClass((PrimitiveType) variableElement.asType()).asType();
+        }
+
+        this.valueType = valueType;
 
         Field field = variableElement.getAnnotation(Field.class);
         if (field == null) {
@@ -57,5 +71,17 @@ final class FieldMeta {
             this.isIndexed = false;
             this.indexFieldMetas = Collections.unmodifiableList(Collections.emptyList());
         }
+    }
+
+    public int getIndex() {
+        return realPosition - 1;
+    }
+
+    public int getRealPosition() {
+        return realPosition;
+    }
+
+    public void setRealPosition(int realPosition) {
+        this.realPosition = realPosition;
     }
 }

@@ -45,7 +45,7 @@ public final class TupleManagerProcessor extends BaseProcessor {
 
             TupleMeta meta = TupleMeta.getInstance((TypeElement) element, typeUtils);
             info("Start to generate new class: %s", meta.className);
-            tupleManagerGenerator.generate(filer, typeUtils, meta);
+            tupleManagerGenerator.generate(filer, meta);
             metaList.add(meta);
         }
 

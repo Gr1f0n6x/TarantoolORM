@@ -102,7 +102,7 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateUpdateMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("updateSync")
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("update")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
                 .returns(ParameterizedTypeName.get(ClassName.get(UpdateOperation.class), tupleMeta.classType));
@@ -132,7 +132,7 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateUpsertMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("upsertSync")
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("upsert")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "defaultValue", Modifier.FINAL)
                 .addParameter(tupleMeta.classType, "updatedValue", Modifier.FINAL)
@@ -163,7 +163,7 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateInsertMethod(TupleMeta tupleMeta) {
-        return MethodSpec.methodBuilder("insertSync")
+        return MethodSpec.methodBuilder("insert")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
                 .returns(ParameterizedTypeName.get(ClassName.get(InsertOperation.class), tupleMeta.classType))
@@ -172,7 +172,7 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateReplaceMethod(TupleMeta tupleMeta) {
-        return MethodSpec.methodBuilder("replaceSync")
+        return MethodSpec.methodBuilder("replace")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
                 .returns(ParameterizedTypeName.get(ClassName.get(ReplaceOperation.class), tupleMeta.classType))
@@ -181,7 +181,7 @@ final class TupleManagerGenerator {
     }
 
     private MethodSpec generateDeleteMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("deleteSync")
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("delete")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
                 .returns(ParameterizedTypeName.get(ClassName.get(DeleteOperation.class), tupleMeta.classType));
@@ -205,7 +205,7 @@ final class TupleManagerGenerator {
         tupleMeta.indexedFields.forEach((indexName, fields) -> {
             fields.sort(Comparator.comparingInt(o -> o.part));
 
-            MethodSpec.Builder builder = MethodSpec.methodBuilder("selectUsing" + Common.capitalize(indexName) + "IndexSync");
+            MethodSpec.Builder builder = MethodSpec.methodBuilder("selectUsing" + Common.capitalize(indexName) + "Index");
             builder.returns(ParameterizedTypeName.get(ClassName.get(SelectOperation.class), tupleMeta.classType));
             builder.addModifiers(Modifier.PUBLIC);
             builder.addParameters(getParametersForSelect(fields, tupleMeta.indexMetas.get(indexName)));

@@ -1,4 +1,4 @@
-package org.tarantool.auto;
+package org.tarantool.orm.auto;
 
 final class Common {
     static public final String PACKAGE_NAME = "org.tarantool.orm.generated";

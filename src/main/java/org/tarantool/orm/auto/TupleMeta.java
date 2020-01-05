@@ -1,4 +1,4 @@
-package org.tarantool.auto;
+package org.tarantool.orm.auto;
 
 
 import com.google.common.collect.Sets;

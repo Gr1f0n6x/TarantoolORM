@@ -1,4 +1,4 @@
-package org.tarantool.auto;
+package org.tarantool.orm.auto;
 
 import com.google.auto.service.AutoService;
 import org.tarantool.orm.annotations.Tuple;

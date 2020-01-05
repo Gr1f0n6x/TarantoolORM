@@ -1,4 +1,4 @@
-package org.tarantool.internals;
+package org.tarantool.orm.internals;
 
 import java.util.List;
 

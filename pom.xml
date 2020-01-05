@@ -6,7 +6,7 @@
 
     <groupId>com.nryanov.tarantool</groupId>
     <artifactId>tarantool-orm</artifactId>
-    <version>0.5</version>
+    <version>0.5-SNAPSHOT</version>
 
     <name>tarantool-orm</name>
     <description>ORM wrapper for TarantoolConnector</description>

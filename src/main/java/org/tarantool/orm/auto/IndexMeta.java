@@ -1,4 +1,4 @@
-package org.tarantool.auto;
+package org.tarantool.orm.auto;
 
 import org.tarantool.orm.annotations.Index;
 

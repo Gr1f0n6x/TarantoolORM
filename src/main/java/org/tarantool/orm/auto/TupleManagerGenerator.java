@@ -1,9 +1,9 @@
-package org.tarantool.auto;
+package org.tarantool.orm.auto;
 
 import com.squareup.javapoet.*;
 import org.tarantool.TarantoolClient;
-import org.tarantool.internals.Meta;
-import org.tarantool.internals.operations.*;
+import org.tarantool.orm.internals.Meta;
+import org.tarantool.orm.internals.operations.*;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;

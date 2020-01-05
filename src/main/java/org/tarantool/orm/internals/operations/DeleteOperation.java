@@ -1,7 +1,7 @@
-package org.tarantool.internals.operations;
+package org.tarantool.orm.internals.operations;
 
 import org.tarantool.TarantoolClient;
-import org.tarantool.internals.Meta;
+import org.tarantool.orm.internals.Meta;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;

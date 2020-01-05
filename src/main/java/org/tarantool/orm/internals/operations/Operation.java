@@ -1,4 +1,4 @@
-package org.tarantool.internals.operations;
+package org.tarantool.orm.internals.operations;
 
 import java.util.concurrent.CompletionStage;
 

@@ -781,4 +781,133 @@ public class TupleProcessorTest {
                 .and()
                 .generatesSources(managerOutput, managerFactoryOutput);
     }
+
+    @Test
+    public void tupleWithMultipleIndexesAndCustomIndexPart() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.Tuple;",
+                        "import org.tarantool.orm.annotations.IndexedField;",
+                        "import org.tarantool.orm.annotations.IndexedFieldParams;",
+                        "import org.tarantool.orm.annotations.Index;",
+                        "",
+                        "@Tuple(spaceName = \"test\", indexes = {@Index(name = \"primary\", isPrimary = true), @Index(name = \"secondary\")})",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = {@IndexedFieldParams(indexName = \"primary\", part = 2), @IndexedFieldParams(indexName = \"secondary\", part = 1)})",
+                        "private int id;",
+                        "@IndexedField(indexes = {@IndexedFieldParams(indexName = \"primary\", part = 1), @IndexedFieldParams(indexName = \"secondary\", part = 2)})",
+                        "private String value;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
+                        "public String getValue() {return value;}",
+                        "public void setValue(String value) {this.value = value;}",
+                        "}"
+                )
+        );
+
+        final JavaFileObject managerOutput = JavaFileObjects.forSourceString(
+                "org.tarantool.orm.generated.DataClassManager",
+                Joiner.on(NEW_LINE).join(
+                        "package org.tarantool.orm.generated;",
+
+                        "import java.lang.Integer;",
+                        "import java.lang.Object;",
+                        "import java.lang.String;",
+                        "import java.util.ArrayList;",
+                        "import java.util.Arrays;",
+                        "import java.util.List;",
+                        "import org.tarantool.TarantoolClient;",
+                        "import org.tarantool.internals.Meta;",
+                        "import org.tarantool.internals.operations.DeleteOperation;",
+                        "import org.tarantool.internals.operations.InsertOperation;",
+                        "import org.tarantool.internals.operations.ReplaceOperation;",
+                        "import org.tarantool.internals.operations.SelectOperation;",
+                        "import org.tarantool.internals.operations.UpdateOperation;",
+                        "import org.tarantool.internals.operations.UpsertOperation;",
+                        "import test.DataClass;",
+
+        "public final class DataClassManager {",
+            "private final String spaceName = \"test\";",
+
+            "private final TarantoolClient tarantoolClient;",
+
+            "private final Meta<DataClass> meta;",
+
+            "public DataClassManager(TarantoolClient tarantoolClient) {",
+                "this.tarantoolClient = tarantoolClient;",
+                "this.meta = new DataClassManagerMeta();",
+            "}",
+
+            "public SelectOperation<DataClass> selectUsingSecondaryIndex(final int id, final String value) {",
+                "List<?> keys = Arrays.asList(id, value);",
+                "return new SelectOperation<>(tarantoolClient, meta, spaceName, \"secondary\", keys);",
+            "}",
+
+            "public SelectOperation<DataClass> selectUsingPrimaryIndex(final String value, final int id) {",
+                "List<?> keys = Arrays.asList(value, id);",
+                "return new SelectOperation<>(tarantoolClient, meta, spaceName, \"primary\", keys);",
+            "}",
+
+            "public InsertOperation<DataClass> insert(final DataClass value) {",
+                "return new InsertOperation<>(tarantoolClient, meta, spaceName, value);",
+            "}",
+
+            "public DeleteOperation<DataClass> delete(final DataClass value) {",
+                "List<Object> keys = new ArrayList<>();",
+                "keys.add(value.getValue());",
+                "keys.add(value.getId());",
+                "return new DeleteOperation<>(tarantoolClient, meta, spaceName, keys);",
+            "}",
+
+            "public ReplaceOperation<DataClass> replace(final DataClass value) {",
+                "return new ReplaceOperation<>(tarantoolClient, meta, spaceName, value);",
+            "}",
+
+            "public UpdateOperation<DataClass> update(final DataClass value) {",
+                "List<Object> keys = new ArrayList<>();",
+                "keys.add(value.getValue());",
+                "keys.add(value.getId());",
+                "List<List<?>> ops = new ArrayList<>();",
+                "return new UpdateOperation<>(tarantoolClient, meta, spaceName, keys, ops);",
+            "}",
+
+            "public UpsertOperation<DataClass> upsert(final DataClass defaultValue,",
+                                                     "final DataClass updatedValue) {",
+                "List<Object> keys = new ArrayList<>();",
+                "keys.add(defaultValue.getValue());",
+                "keys.add(defaultValue.getId());",
+                "List<List<?>> ops = new ArrayList<>();",
+                "return new UpsertOperation<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops);",
+            "}",
+
+            "private final class DataClassManagerMeta extends Meta<DataClass> {",
+                "public List<?> toList(final DataClass value) {",
+                    "List<Object> result = new ArrayList<>();",
+                    "result.add(value.getId());",
+                    "result.add(value.getValue());",
+                    "return result;",
+                "}",
+
+                "public DataClass fromList(final List<?> values) {",
+                    "DataClass result = new DataClass();",
+                    "result.setId((Integer) values.get(0));",
+                    "result.setValue((String) values.get(1));",
+                    "return result;",
+                "}",
+            "}",
+        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(managerOutput, managerFactoryOutput);
+    }
 }

@@ -1,8 +1,9 @@
 package org.tarantool.auto;
 
 import com.squareup.javapoet.*;
-import org.tarantool.Iterator;
 import org.tarantool.TarantoolClient;
+import org.tarantool.internals.Meta;
+import org.tarantool.internals.operations.*;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -24,10 +25,9 @@ final class TupleManagerGenerator {
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addField(spaceName(tupleMeta.spaceName))
                 .addField(TarantoolClient.class, "tarantoolClient", Modifier.PRIVATE, Modifier.FINAL)
-                .addMethod(generateConstructor())
-                .addMethod(generateDataClassToListMethod(tupleMeta))
-                .addMethod(generateListToDataClassMethod(tupleMeta))
-                .addMethod(generateResultToDataClassMethod(tupleMeta))
+                .addField(ParameterizedTypeName.get(ClassName.get(Meta.class), tupleMeta.classType), "meta", Modifier.PRIVATE, Modifier.FINAL)
+                .addMethod(generateConstructor(tupleMeta))
+                .addType(dataClassMeta(tupleMeta))
                 .addMethods(generateSelectMethods(tupleMeta))
                 .addMethod(generateInsertMethod(tupleMeta))
                 .addMethod(generateDeleteMethod(tupleMeta))
@@ -42,6 +42,15 @@ final class TupleManagerGenerator {
         javaFile.writeTo(filer);
     }
 
+    private TypeSpec dataClassMeta(TupleMeta tupleMeta) {
+        return TypeSpec.classBuilder(tupleMeta.className + "Meta")
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .superclass(ParameterizedTypeName.get(ClassName.get(Meta.class), tupleMeta.classType))
+                .addMethod(generateDataClassToListMethod(tupleMeta))
+                .addMethod(generateListToDataClassMethod(tupleMeta))
+                .build();
+    }
+
     private FieldSpec spaceName(String spaceName) {
         return FieldSpec
                 .builder(String.class, "spaceName", Modifier.PRIVATE, Modifier.FINAL)
@@ -49,18 +58,20 @@ final class TupleManagerGenerator {
                 .build();
     }
 
-    private MethodSpec generateConstructor() {
+    private MethodSpec generateConstructor(TupleMeta tupleMeta) {
         return MethodSpec
                 .constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(TarantoolClient.class, "tarantoolClient")
                 .addStatement("this.$N = $N", "tarantoolClient", "tarantoolClient")
+                // fixme: use type ($T)
+                .addStatement("this.$N = new $L()", "meta", tupleMeta.className + "Meta")
                 .build();
     }
 
     private MethodSpec generateListToDataClassMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("fromList")
-                .addModifiers(Modifier.PRIVATE)
+                .addModifiers(Modifier.PUBLIC)
                 .addParameter(wildCardList, "values", Modifier.FINAL)
                 .returns(tupleMeta.classType)
                 .addStatement("$T result = new $T()", tupleMeta.classType, tupleMeta.classType);
@@ -76,12 +87,10 @@ final class TupleManagerGenerator {
 
     private MethodSpec generateDataClassToListMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("toList")
-                .addModifiers(Modifier.PRIVATE)
-                .returns(wildCardList);
-
-        builder.addParameter(tupleMeta.classType, "value", Modifier.FINAL);
-
-        builder.addStatement("$T result = new $T<>()", listOfObjects, arrayList);
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
+                .returns(wildCardList)
+                .addStatement("$T result = new $T<>()", listOfObjects, arrayList);
 
         for (FieldMeta fieldMeta : tupleMeta.fields) {
             builder.addStatement("result.add(value.$L())", fieldMeta.getterName);
@@ -92,26 +101,11 @@ final class TupleManagerGenerator {
         return builder.build();
     }
 
-    private MethodSpec generateResultToDataClassMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("resultToDataClass")
-                .addModifiers(Modifier.PRIVATE)
-                .addParameter(wildCardList, "result", Modifier.FINAL)
-                .returns(tupleMeta.classType);
-
-        builder.beginControlFlow("if (result.size() == 1)");
-        builder.addStatement("return fromList(($T) result.get(0))", wildCardList);
-        builder.nextControlFlow("else");
-        builder.addStatement("return null");
-        builder.endControlFlow();
-
-        return builder.build();
-    }
-
     private MethodSpec generateUpdateMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("updateSync")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
-                .returns(tupleMeta.classType);
+                .returns(ParameterizedTypeName.get(ClassName.get(UpdateOperation.class), tupleMeta.classType));
 
         List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
 
@@ -132,8 +126,7 @@ final class TupleManagerGenerator {
                         builder.addStatement("ops.add($T.asList($S, $L, value.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
                 );
 
-        builder.addStatement("$T result = this.$N.syncOps().update($S, keys, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.addStatement("return resultToDataClass(result)");
+        builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, keys, ops)", UpdateOperation.class);
 
         return builder.build();
     }
@@ -143,7 +136,7 @@ final class TupleManagerGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "defaultValue", Modifier.FINAL)
                 .addParameter(tupleMeta.classType, "updatedValue", Modifier.FINAL)
-                .returns(tupleMeta.classType);
+                .returns(ParameterizedTypeName.get(ClassName.get(UpsertOperation.class), tupleMeta.classType));
 
         List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
 
@@ -153,7 +146,6 @@ final class TupleManagerGenerator {
             builder.addStatement("keys.add(defaultValue.$L())", indexFieldMeta.getterName);
         }
 
-        builder.addStatement("$T values = toList(defaultValue)", wildCardList);
         builder.addStatement("$T<$T> ops = new $T<>()", list, wildCardList, arrayList);
         // filter fields which are used as primary index because we can't update them
         tupleMeta.fields
@@ -165,43 +157,34 @@ final class TupleManagerGenerator {
                         builder.addStatement("ops.add($T.asList($S, $L, updatedValue.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
                 );
 
-        builder.addStatement("$T result = this.$N.syncOps().upsert($S, keys, values, ops)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.addStatement("return resultToDataClass(result)");
+        builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops)", UpsertOperation.class);
 
         return builder.build();
     }
 
     private MethodSpec generateInsertMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("insertSync")
+        return MethodSpec.methodBuilder("insertSync")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
-                .returns(tupleMeta.classType);
-
-        builder.addStatement("$T values = toList(value)", wildCardList);
-        builder.addStatement("$T result = this.$N.syncOps().insert($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.addStatement("return resultToDataClass(result)");
-
-        return builder.build();
+                .returns(ParameterizedTypeName.get(ClassName.get(InsertOperation.class), tupleMeta.classType))
+                .addStatement("return new $T<>(tarantoolClient, meta, spaceName, value)", InsertOperation.class)
+                .build();
     }
 
     private MethodSpec generateReplaceMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("replaceSync")
+        return MethodSpec.methodBuilder("replaceSync")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
-                .returns(tupleMeta.classType);
-
-        builder.addStatement("$T values = toList(value)", wildCardList);
-        builder.addStatement("$T result = this.$N.syncOps().replace($S, values)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.addStatement("return resultToDataClass(result)");
-
-        return builder.build();
+                .returns(ParameterizedTypeName.get(ClassName.get(ReplaceOperation.class), tupleMeta.classType))
+                .addStatement("return new $T<>(tarantoolClient, meta, spaceName, value)", ReplaceOperation.class)
+                .build();
     }
 
     private MethodSpec generateDeleteMethod(TupleMeta tupleMeta) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("deleteSync")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
-                .returns(tupleMeta.classType);
+                .returns(ParameterizedTypeName.get(ClassName.get(DeleteOperation.class), tupleMeta.classType));
 
         List<IndexFieldMeta> indexFieldMetas = tupleMeta.indexedFields.get(tupleMeta.primaryIndexName);
 
@@ -211,8 +194,7 @@ final class TupleManagerGenerator {
             builder.addStatement("keys.add(value.$L())", indexFieldMeta.getterName);
         }
 
-        builder.addStatement("$T result = this.$N.syncOps().delete($S, keys)", wildCardList, "tarantoolClient", tupleMeta.spaceName);
-        builder.addStatement("return resultToDataClass(result)");
+        builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, keys)", DeleteOperation.class);
 
         return builder.build();
     }
@@ -224,10 +206,10 @@ final class TupleManagerGenerator {
             fields.sort(Comparator.comparingInt(o -> o.part));
 
             MethodSpec.Builder builder = MethodSpec.methodBuilder("selectUsing" + Common.capitalize(indexName) + "IndexSync");
-            builder.returns(tupleMeta.classType);
+            builder.returns(ParameterizedTypeName.get(ClassName.get(SelectOperation.class), tupleMeta.classType));
             builder.addModifiers(Modifier.PUBLIC);
             builder.addParameters(getParametersForSelect(fields, tupleMeta.indexMetas.get(indexName)));
-            builder.addCode(getSelectStatement(fields, tupleMeta, tupleMeta.indexMetas.get(indexName)));
+            builder.addCode(getSelectStatement(fields, tupleMeta.indexMetas.get(indexName)));
 
             methodSpecs.add(builder.build());
         });
@@ -248,13 +230,12 @@ final class TupleManagerGenerator {
         }).collect(Collectors.toList());
     }
 
-    private CodeBlock getSelectStatement(List<IndexFieldMeta> indexFieldMetas, TupleMeta tupleMeta, IndexMeta indexMeta) {
+    private CodeBlock getSelectStatement(List<IndexFieldMeta> indexFieldMetas, IndexMeta indexMeta) {
         CodeBlock.Builder builder = CodeBlock.builder();
 
         String arguments = indexFieldMetas.stream().map(meta -> meta.indexField.getSimpleName().toString()).collect(Collectors.joining(", "));
         builder.addStatement("$T keys = $T.asList($L)", wildCardList, Arrays.class, arguments);
-        builder.addStatement("$T result = this.$N.syncOps().select($S, $S, keys, $L, $L, $T.EQ)", wildCardList, "tarantoolClient", tupleMeta.spaceName, indexMeta.name, 0, 1, Iterator.class);
-        builder.addStatement("return resultToDataClass(result)");
+        builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, $S, keys)", SelectOperation.class, indexMeta.name);
 
         return builder.build();
     }

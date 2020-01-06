@@ -17,17 +17,22 @@ final class TupleManagerGenerator {
     private final ParameterizedTypeName listOfObjects = ParameterizedTypeName.get(list, ClassName.OBJECT);
     private final ClassName arrayList = ClassName.get("java.util", "ArrayList");
 
-    public TupleManagerGenerator() {
+    private final Filer filer;
+
+    public TupleManagerGenerator(Filer filer) {
+        this.filer = filer;
     }
 
-    public void generate(Filer filer, TupleMeta tupleMeta) throws IOException {
+    public void generate(TupleMeta tupleMeta) throws IOException {
+        DataClassMetaGenerator dataClassMetaGenerator = new DataClassMetaGenerator();
+
         TypeSpec newClass = TypeSpec.classBuilder(tupleMeta.className)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addField(spaceName(tupleMeta.spaceName))
                 .addField(TarantoolClient.class, "tarantoolClient", Modifier.PRIVATE, Modifier.FINAL)
                 .addField(ParameterizedTypeName.get(ClassName.get(Meta.class), tupleMeta.classType), "meta", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethod(generateConstructor(tupleMeta))
-                .addType(dataClassMeta(tupleMeta))
+                .addType(dataClassMetaGenerator.generate(tupleMeta))
                 .addMethods(generateSelectMethods(tupleMeta))
                 .addMethod(generateInsertMethod(tupleMeta))
                 .addMethod(generateDeleteMethod(tupleMeta))
@@ -40,15 +45,6 @@ final class TupleManagerGenerator {
                 .build();
 
         javaFile.writeTo(filer);
-    }
-
-    private TypeSpec dataClassMeta(TupleMeta tupleMeta) {
-        return TypeSpec.classBuilder(tupleMeta.className + "Meta")
-                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                .superclass(ParameterizedTypeName.get(ClassName.get(Meta.class), tupleMeta.classType))
-                .addMethod(generateDataClassToListMethod(tupleMeta))
-                .addMethod(generateListToDataClassMethod(tupleMeta))
-                .build();
     }
 
     private FieldSpec spaceName(String spaceName) {
@@ -67,43 +63,6 @@ final class TupleManagerGenerator {
                 // fixme: use type ($T)
                 .addStatement("this.$N = new $L()", "meta", tupleMeta.className + "Meta")
                 .build();
-    }
-
-    private MethodSpec generateListToDataClassMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("fromList")
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(wildCardList, "values", Modifier.FINAL)
-                .returns(tupleMeta.classType)
-                .addStatement("$T result = new $T()", tupleMeta.classType, tupleMeta.classType);
-
-        for (FieldMeta fieldMeta : tupleMeta.fields) {
-            if (Common.isNumber(fieldMeta.field.asType().getKind())) {
-                String toValue = fieldMeta.field.asType().getKind().name().toLowerCase() + "Value()";
-                builder.addStatement("result.$L((($T) values.get($L)).$L)", fieldMeta.setterName, Number.class, fieldMeta.getIndex(), toValue);
-            } else {
-                builder.addStatement("result.$L(($T) values.get($L))", fieldMeta.setterName, fieldMeta.valueType, fieldMeta.getIndex());
-            }
-        }
-
-        builder.addStatement("return result");
-
-        return builder.build();
-    }
-
-    private MethodSpec generateDataClassToListMethod(TupleMeta tupleMeta) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("toList")
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(tupleMeta.classType, "value", Modifier.FINAL)
-                .returns(wildCardList)
-                .addStatement("$T result = new $T<>()", listOfObjects, arrayList);
-
-        for (FieldMeta fieldMeta : tupleMeta.fields) {
-            builder.addStatement("result.add(value.$L())", fieldMeta.getterName);
-        }
-
-        builder.addStatement("return result");
-
-        return builder.build();
     }
 
     private MethodSpec generateUpdateMethod(TupleMeta tupleMeta) {

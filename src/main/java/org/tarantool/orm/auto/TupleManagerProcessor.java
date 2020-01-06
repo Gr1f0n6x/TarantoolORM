@@ -36,7 +36,7 @@ public final class TupleManagerProcessor extends BaseProcessor {
 
     private List<TupleMeta> generateTupleManagers(RoundEnvironment roundEnv) throws IOException {
         List<TupleMeta> metaList = new ArrayList<>();
-        TupleManagerGenerator tupleManagerGenerator = new TupleManagerGenerator();
+        TupleManagerGenerator tupleManagerGenerator = new TupleManagerGenerator(filer);
 
         for (Element element : roundEnv.getElementsAnnotatedWith(Tuple.class)) {
             if (element.getKind() != ElementKind.CLASS) {
@@ -45,7 +45,7 @@ public final class TupleManagerProcessor extends BaseProcessor {
 
             TupleMeta meta = TupleMeta.getInstance((TypeElement) element, typeUtils);
             info("Start to generate new class: %s", meta.className);
-            tupleManagerGenerator.generate(filer, meta);
+            tupleManagerGenerator.generate(meta);
             metaList.add(meta);
         }
 

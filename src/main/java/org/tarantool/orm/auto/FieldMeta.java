@@ -27,8 +27,8 @@ final class FieldMeta {
     public final boolean isIndexed;
     public final List<IndexFieldMeta> indexFieldMetas;
     public final TypeMirror valueType;
-    // index is used in update and upsert operation and represents the real field position
-    private int realPosition;
+
+    private int index;
 
     public static FieldMeta getInstance(VariableElement element, ExecutableElement getter, ExecutableElement setter, Types typeUtil) {
         return new FieldMeta(element, getter, setter, typeUtil);
@@ -74,14 +74,10 @@ final class FieldMeta {
     }
 
     public int getIndex() {
-        return realPosition - 1;
+        return index;
     }
 
-    public int getRealPosition() {
-        return realPosition;
-    }
-
-    public void setRealPosition(int realPosition) {
-        this.realPosition = realPosition;
+    public void setIndex(int index) {
+        this.index = index;
     }
 }

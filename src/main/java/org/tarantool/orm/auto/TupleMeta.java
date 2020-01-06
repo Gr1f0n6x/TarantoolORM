@@ -92,9 +92,9 @@ final class TupleMeta {
                 .sorted(Comparator.comparingInt(meta -> meta.position))
                 .collect(Collectors.toList());
 
-        int index = 1;
+        int index = 0;
         for (FieldMeta meta : sortedFieldList) {
-            meta.setRealPosition(index++);
+            meta.setIndex(index++);
         }
 
         return sortedFieldList;

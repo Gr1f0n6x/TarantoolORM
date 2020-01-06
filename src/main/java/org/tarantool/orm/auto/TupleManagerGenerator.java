@@ -87,7 +87,7 @@ final class TupleManagerGenerator {
                         .stream()
                         .noneMatch(indexFieldMeta -> indexFieldMeta.indexName.equals(tupleMeta.primaryIndexName)))
                 .forEach(fieldMeta ->
-                        builder.addStatement("ops.add($T.asList($S, $L, value.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
+                        builder.addStatement("ops.add($T.asList($S, $L, value.$L()))", Arrays.class, "=", fieldMeta.getIndex(), fieldMeta.getterName)
                 );
 
         builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, keys, ops)", UpdateOperation.class);
@@ -118,7 +118,7 @@ final class TupleManagerGenerator {
                         .stream()
                         .noneMatch(indexFieldMeta -> indexFieldMeta.indexName.equals(tupleMeta.primaryIndexName)))
                 .forEach(fieldMeta ->
-                        builder.addStatement("ops.add($T.asList($S, $L, updatedValue.$L()))", Arrays.class, "=", fieldMeta.getRealPosition(), fieldMeta.getterName)
+                        builder.addStatement("ops.add($T.asList($S, $L, updatedValue.$L()))", Arrays.class, "=", fieldMeta.getIndex(), fieldMeta.getterName)
                 );
 
         builder.addStatement("return new $T<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops)", UpsertOperation.class);

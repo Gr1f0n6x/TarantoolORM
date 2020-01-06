@@ -423,10 +423,16 @@ public class TupleProcessorTest {
                         "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
                         "private int id;",
                         "private int value;",
+                        "private Object[] objects;",
+                        "private long[] longs;",
                         "public int getId() {return id;}",
                         "public void setId(int id) {this.id = id;}",
                         "public int getValue() {return value;}",
                         "public void setValue(int value) {this.value = value;}",
+                        "public Object[] getObjects() {return objects;}",
+                        "public void setObjects(Object[] objects) {this.objects = objects;}",
+                        "public long[] getLongs() {return longs;}",
+                        "public void setLongs(long[] longs) {this.longs = longs;}",
                         "}"
                 )
         );
@@ -434,23 +440,26 @@ public class TupleProcessorTest {
         final JavaFileObject managerOutput = JavaFileObjects.forSourceString(
                 "org.tarantool.orm.generated.DataClassManager",
                 Joiner.on(NEW_LINE).join(
+
                         "package org.tarantool.orm.generated;",
 
-        "import java.lang.Number;",
-        "import java.lang.Object;",
-        "import java.lang.String;",
-        "import java.util.ArrayList;",
-        "import java.util.Arrays;",
-        "import java.util.List;",
-        "import org.tarantool.TarantoolClient;",
-        "import org.tarantool.orm.internals.Meta;",
-        "import org.tarantool.orm.internals.operations.DeleteOperation;",
-        "import org.tarantool.orm.internals.operations.InsertOperation;",
-        "import org.tarantool.orm.internals.operations.ReplaceOperation;",
-        "import org.tarantool.orm.internals.operations.SelectOperation;",
-        "import org.tarantool.orm.internals.operations.UpdateOperation;",
-        "import org.tarantool.orm.internals.operations.UpsertOperation;",
-        "import test.DataClass;",
+"import com.google.common.primitives.Longs;",
+"import java.lang.Number;",
+"import java.lang.Object;",
+"import java.lang.String;",
+"import java.util.ArrayList;",
+"import java.util.Arrays;",
+"import java.util.Collection;",
+"import java.util.List;",
+"import org.tarantool.TarantoolClient;",
+"import org.tarantool.orm.internals.Meta;",
+"import org.tarantool.orm.internals.operations.DeleteOperation;",
+"import org.tarantool.orm.internals.operations.InsertOperation;",
+"import org.tarantool.orm.internals.operations.ReplaceOperation;",
+"import org.tarantool.orm.internals.operations.SelectOperation;",
+"import org.tarantool.orm.internals.operations.UpdateOperation;",
+"import org.tarantool.orm.internals.operations.UpsertOperation;",
+"import test.DataClass;",
 
         "public final class DataClassManager {",
             "private final String spaceName = \"test\";",
@@ -487,7 +496,9 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(value.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 2, value.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 1, value.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 2, value.getObjects()));",
+                "ops.add(Arrays.asList(\"=\", 3, value.getLongs()));",
                 "return new UpdateOperation<>(tarantoolClient, meta, spaceName, keys, ops);",
             "}",
 
@@ -496,7 +507,9 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(defaultValue.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 2, updatedValue.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 1, updatedValue.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 2, updatedValue.getObjects()));",
+                "ops.add(Arrays.asList(\"=\", 3, updatedValue.getLongs()));",
                 "return new UpsertOperation<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops);",
             "}",
 
@@ -505,6 +518,8 @@ public class TupleProcessorTest {
                     "List<Object> result = new ArrayList<>();",
                     "result.add(value.getId());",
                     "result.add(value.getValue());",
+                    "result.add(value.getObjects());",
+                    "result.add(value.getLongs());",
                     "return result;",
                 "}",
 
@@ -512,6 +527,8 @@ public class TupleProcessorTest {
                     "DataClass result = new DataClass();",
                     "result.setId(((Number) values.get(0)).intValue());",
                     "result.setValue(((Number) values.get(1)).intValue());",
+                    "result.setObjects(((List<?>) values.get(2)).toArray(new Object[] {}));",
+                    "result.setLongs(Longs.toArray((Collection<? extends Number>) values.get(3)));",
                     "return result;",
                 "}",
             "}",
@@ -616,7 +633,7 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(value.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 2, value.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 1, value.getValue()));",
                 "return new UpdateOperation<>(tarantoolClient, meta, spaceName, keys, ops);",
             "}",
 
@@ -625,7 +642,7 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(defaultValue.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 2, updatedValue.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 1, updatedValue.getValue()));",
                 "return new UpsertOperation<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops);",
             "}",
 
@@ -741,7 +758,7 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(value.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 1, value.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 0, value.getValue()));",
                 "return new UpdateOperation<>(tarantoolClient, meta, spaceName, keys, ops);",
             "}",
 
@@ -750,7 +767,7 @@ public class TupleProcessorTest {
                 "List<Object> keys = new ArrayList<>();",
                 "keys.add(defaultValue.getId());",
                 "List<List<?>> ops = new ArrayList<>();",
-                "ops.add(Arrays.asList(\"=\", 1, updatedValue.getValue()));",
+                "ops.add(Arrays.asList(\"=\", 0, updatedValue.getValue()));",
                 "return new UpsertOperation<>(tarantoolClient, meta, spaceName, keys, defaultValue, ops);",
             "}",
 
@@ -909,5 +926,256 @@ public class TupleProcessorTest {
                 .compilesWithoutError()
                 .and()
                 .generatesSources(managerOutput, managerFactoryOutput);
+    }
+
+    @Test
+    public void byteField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private byte id;",
+                        "public byte getId() {return id;}",
+                        "public void setId(byte id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void shortField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private short id;",
+                        "public short getId() {return id;}",
+                        "public void setId(short id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void intField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private int id;",
+                        "public int getId() {return id;}",
+                        "public void setId(int id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void floatField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private float id;",
+                        "public float getId() {return id;}",
+                        "public void setId(float id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void longField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private long id;",
+                        "public long getId() {return id;}",
+                        "public void setId(long id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void doubleField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private double id;",
+                        "public double getId() {return id;}",
+                        "public void setId(double id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void characterField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private char id;",
+                        "public char getId() {return id;}",
+                        "public void setId(char id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void arrayOfIntField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private int[] id;",
+                        "public int[] getId() {return id;}",
+                        "public void setId(int[] id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void arrayOfObjectsField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private Object[] id;",
+                        "public Object[] getId() {return id;}",
+                        "public void setId(Object[] id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
+    }
+
+    @Test
+    public void mapField() {
+        final JavaFileObject input = JavaFileObjects.forSourceString(
+                "test.DataClass",
+                Joiner.on(NEW_LINE).join(
+                        "package test;",
+                        "",
+                        "import org.tarantool.orm.annotations.*;",
+                        "import java.util.Map;",
+                        "@Tuple(indexes = @Index(name = \"primary\", isPrimary = true), spaceName = \"test\")",
+                        "public class DataClass {",
+                        "@IndexedField(indexes = @IndexedFieldParams(indexName = \"primary\"))",
+                        "private Map<String, Object> id;",
+                        "public Map<String, Object> getId() {return id;}",
+                        "public void setId(Map<String, Object> id) {this.id = id;}",
+                        "}"
+                )
+        );
+
+        Truth.assert_()
+                .about(JavaSourcesSubjectFactory.javaSources())
+                .that(Arrays.asList(input))
+                .processedWith(new TupleManagerProcessor())
+                .compilesWithoutError();
     }
 }

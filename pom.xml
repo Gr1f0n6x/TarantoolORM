@@ -4,47 +4,92 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.Gr1f0n6x</groupId>
-    <artifactId>tarantoolorm</artifactId>
-    <version>0.4</version>
+    <groupId>com.nryanov.tarantool</groupId>
+    <artifactId>tarantool-orm</artifactId>
+    <version>0.5</version>
 
-    <name>tarantoolorm</name>
+    <name>tarantool-orm</name>
     <description>ORM wrapper for TarantoolConnector</description>
-    <url>https://github.com/Gr1f0n6x/TarantoolORM</url>
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
-        </license>
-    </licenses>
-    <developers>
-        <developer>
-            <name>Nikita Ryanov</name>
-            <email>ryanov.nikita@gmail.com</email>
-        </developer>
-    </developers>
-    <scm>
-        <connection>scm:git:git@github.com:Gr1f0n6x/TarantoolORM.git</connection>
-        <developerConnection>scm:git:git@github.com:Gr1f0n6x/TarantoolORM.git</developerConnection>
-        <url>https://github.com/Gr1f0n6x/TarantoolORM</url>
-    </scm>
+    <url>https://github.com/nryanov/tarantool-orm</url>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+    <properties>
+        <auto-service-version>1.0-rc6</auto-service-version>
+        <javapoet-version>1.11.1</javapoet-version>
+        <tarantool-connector-version>1.9.4</tarantool-connector-version>
+        <slf4j-api-version>1.7.30</slf4j-api-version>
+        <logback-version>1.2.3</logback-version>
+        <testcontainers-version>1.12.4</testcontainers-version>
+        <junit-version>4.12</junit-version>
+        <google-truth-version>1.0</google-truth-version>
+        <google-compile-testing-version>0.18</google-compile-testing-version>
+        <google-guava-version>28.1-jre</google-guava-version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <version>${auto-service-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>${javapoet-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${google-guava-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.tarantool</groupId>
+            <artifactId>connector</artifactId>
+            <version>${tarantool-connector-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-api-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+            <version>${google-truth-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.testing.compile</groupId>
+            <artifactId>compile-testing</artifactId>
+            <version>${google-compile-testing-version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -93,17 +138,32 @@
         </plugins>
     </build>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.tarantool</groupId>
-            <artifactId>connector</artifactId>
-            <version>1.7.4</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Nikita Ryanov</name>
+            <email>ryanov.nikita@gmail.com</email>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git@github.com:nryanov/tarantool-orm.git</connection>
+        <developerConnection>scm:git:git@github.com:nryanov/tarantool-orm.git</developerConnection>
+        <url>https://github.com/nryanov/tarantool-orm</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 </project>

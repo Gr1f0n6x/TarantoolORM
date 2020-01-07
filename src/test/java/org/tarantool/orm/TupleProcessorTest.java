@@ -11,9 +11,10 @@ import javax.tools.JavaFileObject;
 
 import java.util.Arrays;
 
-import static com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Text.NEW_LINE;
 
 public class TupleProcessorTest {
+    public static final String NEW_LINE = System.getProperty("line.separator");
+
     private final JavaFileObject managerFactoryOutput = JavaFileObjects.forSourceString(
             "org.tarantool.orm.generated.ManagerFactory",
             Joiner.on(NEW_LINE).join(

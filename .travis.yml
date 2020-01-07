@@ -11,10 +11,11 @@ services:
 before_install:
   - docker pull tarantool/tarantool:2.3
 
-before_script:
-  - mvn compile
+install:
+  - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dgpg.skip -B -V
 
 script:
+  - mvn compile
   - mvn test
 
 notifications:

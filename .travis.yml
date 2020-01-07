@@ -21,7 +21,8 @@ cache:
     - $HOME/.gradle/wrapper/
 
 script:
-  - mvn verify
+  - mvn compile
+  - mvn test
 
 notifications:
   email: false

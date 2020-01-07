@@ -1,5 +1,9 @@
 # TarantoolORM
 
+[![Build Status](https://img.shields.io/travis/nryanov/tarantool-orm/master.svg)](https://travis-ci.com/nryanov/tarantool-orm)
+[![GitHub license](https://img.shields.io/github/license/nryanov/tarantool-orm)](https://github.com/nryanov/tarantool-orm/blob/master/LICENSE.txt)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nryanov.tarantool/tarantool-orm/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.nryanov.tarantool/tarantool-orm)
+
 It is the wrapper for the [TarantoolConnector](https://github.com/tarantool/tarantool-java)
 
 ## Requirements

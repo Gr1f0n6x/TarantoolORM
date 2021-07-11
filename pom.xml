@@ -22,7 +22,7 @@
         <junit-version>4.12</junit-version>
         <google-truth-version>1.0</google-truth-version>
         <google-compile-testing-version>0.18</google-compile-testing-version>
-        <google-guava-version>28.1-jre</google-guava-version>
+        <google-guava-version>29.0-jre</google-guava-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
